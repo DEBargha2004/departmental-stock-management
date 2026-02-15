@@ -7,6 +7,9 @@
     "dev": "tsc --watch",
     "build": "tsc"
   },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
