@@ -206,7 +206,7 @@ export const issueItem = pgTable(
 
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (table) => [check('quantity', sql`${table.quantity} > 0`)],
+  (table) => [check('quantity', gt(table.quantity, 0))],
 );
 
 export const returnItem = pgTable(
