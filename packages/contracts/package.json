@@ -1,5 +1,5 @@
 {
-  "name": "contracts",
+  "name": "@repo/contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,5 +12,14 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "exports": {
+    "./user": {
+      "default": "./src/user.js",
+      "types": "./src/user.ts"
+    }
+  }
 }
