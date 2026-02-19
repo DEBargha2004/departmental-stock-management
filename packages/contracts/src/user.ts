@@ -18,8 +18,8 @@ export const userCreateSchema = z
   });
 
 export const userUpdateSchema = z.object({
-  name: z.string().optional(),
-  email: z.email().optional(),
+  name: z.string(),
+  email: z.email(),
 });
 
 export type TUserCreateSchema = z.infer<typeof userCreateSchema>;

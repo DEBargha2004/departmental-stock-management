@@ -1,20 +1,29 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DATABASE_MODULE, TDB } from 'src/database/db.module';
-import type { TUserCreateSchema } from '@repo/contracts/src/user';
+import type {
+  TUserCreateSchema,
+  TUserUpdateSchema,
+} from '@repo/contracts/src/user';
 import { user } from 'src/database/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 
 @Injectable()
 export class UserService {
   constructor(@Inject(DATABASE_MODULE) public db: TDB) {}
 
-  async getUserById(id: string) {
-    const res = await this.db
+  async getUserById(id: number) {
+    const [res] = await this.db
       .select()
       .from(user)
-      .where(and(isNull(user.deletedAt), eq(user.id, Number(id))));
+      .where(and(isNull(user.deletedAt), eq(user.id, id)));
 
-    return res[0];
+    return res;
   }
 
   async getUserByEmail(email: string) {
@@ -26,10 +35,6 @@ export class UserService {
     return res[0];
   }
   async createUser(userDto: TUserCreateSchema) {
-    const existingUser = await this.getUserByEmail(userDto.email);
-
-    if (existingUser) throw new ConflictException('Email already exists');
-
     const [res] = await this.db
       .insert(user)
       .values({
@@ -37,6 +42,64 @@ export class UserService {
         name: userDto.email,
       })
       .returning();
+
+    return res;
+  }
+
+  async updateUser(id: number, updateUserDto: TUserUpdateSchema) {
+    const [updatedUser] = await this.db
+      .update(user)
+      .set({
+        name: updateUserDto.name,
+        email: updateUserDto.email,
+      })
+      .returning();
+
+    if (updatedUser)
+      throw new InternalServerErrorException('User could not be created');
+
+    return updatedUser;
+  }
+
+  async deleteUser(id: number) {
+    const [deletedUser] = await this.db
+      .update(user)
+      .set({ deletedAt: new Date() })
+      .where(eq(user.id, id))
+      .returning();
+
+    return deletedUser;
+  }
+
+  async getUsers(query?: string) {
+    const res = await this.db
+      .select()
+      .from(user)
+      .where(
+        and(
+          isNull(user.deletedAt),
+          ...(query
+            ? [
+                or(
+                  gte(sql`SIMILARITY(${user.name},${query})`, 0.3),
+                  gte(sql`SIMILARITY(${user.name},${query})`, 0.3),
+                ),
+              ]
+            : []),
+        ),
+      )
+      .orderBy(
+        query
+          ? desc(
+              sql`
+          GREATEST(
+            SIMILARITY(${user.name}, ${query}),
+            SIMILARITY(${user.email}, ${query})
+          )
+        `,
+            )
+          : desc(user.createdAt),
+      );
 
     return res;
   }

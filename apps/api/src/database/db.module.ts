@@ -23,5 +23,6 @@ export type TDB = NodePgDatabase;
       },
     },
   ],
+  exports: [DATABASE_MODULE],
 })
 export class DatabaseModule {}

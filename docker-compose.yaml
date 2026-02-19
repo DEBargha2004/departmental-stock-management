@@ -9,6 +9,7 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/
+      - apps/api/src/database/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   db_data:
