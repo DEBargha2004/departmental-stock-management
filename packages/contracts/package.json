@@ -18,8 +18,20 @@
   },
   "exports": {
     "./user": {
-      "default": "./src/user.js",
+      "default": "./dist/user.js",
       "types": "./src/user.ts"
+    },
+    "./sign-in": {
+      "default": "./dist/auth/sign-in.js",
+      "types": "./src/auth/sign-in.ts"
+    },
+    "./forget-password": {
+      "default": "./dist/auth/forget-password.js",
+      "types": "./src/auth/forget-password.ts"
+    },
+    "./reset-password": {
+      "default": "./dist/auth/reset-password.js",
+      "types": "./src/auth/reset-password.ts"
     }
   }
 }
