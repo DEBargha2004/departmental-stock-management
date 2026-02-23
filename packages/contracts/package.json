@@ -1,6 +1,7 @@
 {
   "name": "@repo/contracts",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -18,20 +19,20 @@
   },
   "exports": {
     "./user": {
-      "default": "./dist/user.js",
-      "types": "./src/user.ts"
+      "types": "./dist/user.d.ts",
+      "default": "./dist/user.js"
     },
     "./sign-in": {
-      "default": "./dist/auth/sign-in.js",
-      "types": "./src/auth/sign-in.ts"
+      "types": "./dist/auth/sign-in.d.ts",
+      "default": "./dist/auth/sign-in.js"
     },
     "./forget-password": {
-      "default": "./dist/auth/forget-password.js",
-      "types": "./src/auth/forget-password.ts"
+      "types": "./dist/auth/forget-password.d.ts",
+      "default": "./dist/auth/forget-password.js"
     },
     "./reset-password": {
-      "default": "./dist/auth/reset-password.js",
-      "types": "./src/auth/reset-password.ts"
+      "types": "./dist/auth/reset-password.d.ts",
+      "default": "./dist/auth/reset-password.js"
     }
   }
 }

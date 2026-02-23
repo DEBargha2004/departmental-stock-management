@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { TConfig } from 'src/lib/config';
 
 export const DATABASE_MODULE = Symbol('DATABASE_MODULE');
 export type TDB = NodePgDatabase;
@@ -12,8 +13,8 @@ export type TDB = NodePgDatabase;
     {
       provide: DATABASE_MODULE,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const db_url = config.get<string>('db_url');
+      useFactory: (config: ConfigService<TConfig>) => {
+        const db_url = config.get('db_url', { infer: true });
 
         const pool = new Pool({
           connectionString: db_url,

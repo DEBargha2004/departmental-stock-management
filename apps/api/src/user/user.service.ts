@@ -5,11 +5,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { DATABASE_MODULE, TDB } from 'src/database/db.module';
-import type {
-  TUserCreateSchema,
-  TUserUpdateSchema,
-} from '@repo/contracts/src/user';
+import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import {
+  type TUserCreateSchema,
+  type TUserUpdateSchema,
+} from '@repo/contracts/user';
 import { user } from 'src/database/schema';
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 

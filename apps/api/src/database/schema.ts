@@ -1,4 +1,4 @@
-import { gt, gte, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
   check,
   date,
@@ -28,6 +28,16 @@ export const credentials = pgTable('credentials', {
     .notNull()
     .references(() => user.id),
   password: text('password').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const resetPasswordToken = pgTable('reset_password_token', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => user.id),
+  tokenHash: text('token_hash').notNull(),
+  expiredAt: timestamp('expired_at').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -79,7 +89,7 @@ export const auditLog = pgTable('audit_log', {
 
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(),
-  entityId: integer('id').notNull(),
+  entityId: integer('entity_id').notNull(),
   eventData: jsonb('event_data'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
@@ -111,15 +121,12 @@ export const item = pgTable(
       .notNull()
       .references(() => category.id),
 
-    status: text('status')
-      .$type<STATUS>()
-      .notNull()
-      .default(sql`DRAFT`),
+    status: text('status').$type<STATUS>().notNull().default('DRAFT'),
 
     minStockLevel: integer('min_stock_level'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (table) => [check(table.minStockLevel.name, gte(table.minStockLevel, 0))],
+  (table) => [check('min_stock_level_check', sql`${item.minStockLevel} > 0`)],
 );
 
 // snapshot of stock
@@ -194,8 +201,10 @@ export const issueItem = pgTable(
   'issue_item',
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    itemId: integer('item_id').notNull().generatedAlwaysAsIdentity(),
-    quantity: integer('qyantity').notNull(),
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => item.id),
+    quantity: integer('quantity').notNull(),
     issuedBy: integer('issued_by')
       .notNull()
       .references(() => user.id),
@@ -206,7 +215,9 @@ export const issueItem = pgTable(
 
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (table) => [check('quantity', gt(table.quantity, 0))],
+  (table) => [
+    check('issue_item_quantity_check', sql`${issueItem.quantity} > 0`),
+  ],
 );
 
 export const returnItem = pgTable(
@@ -221,6 +232,9 @@ export const returnItem = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [
-    check(table.quantityReceived.name, gt(table.quantityReceived, 0)),
+    check(
+      'return_item_quantity_check',
+      sql`${returnItem.quantityReceived} > 0`,
+    ),
   ],
 );
