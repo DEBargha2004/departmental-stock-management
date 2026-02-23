@@ -1,32 +1,39 @@
 import ForgetPasswordForm from "@/components/custom/forms/forget-password";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDefaultForgetPasswordValues } from "@/constants/form-defaults/forget-password";
+import { useForgetPasswordMutation } from "@/features/auth/mutation";
+import { catchError } from "@/lib/catch-error";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   forgetPasswordSchema,
   type TForgetPassword,
 } from "@repo/contracts/forget-password";
 import { CheckCircle2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
-const RESET_LINK_SENT_KEY = "resetLinkSent";
+// const RESET_LINK_SENT_KEY = "resetLinkSent";
 
 export default function ForgetPasswordPage() {
-  const [resetLinkSent, setResetLinkSent] = useState<boolean | null>(null);
+  const [resetLinkSent, setResetLinkSent] = useState<boolean | null>(false);
   const form = useForm<TForgetPassword>({
     resolver: zodResolver(forgetPasswordSchema),
     defaultValues: getDefaultForgetPasswordValues(),
   });
+  const { mutateAsync } = useForgetPasswordMutation();
 
   const onSubmit = async (data: TForgetPassword) => {
-    console.log(data);
-  };
+    const [err, res] = await catchError(mutateAsync(data));
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setResetLinkSent(localStorage.getItem(RESET_LINK_SENT_KEY) === "true");
-  }, []);
+    if (err) {
+      toast.error(err.message);
+      return;
+    }
+
+    toast.message(res.data.message);
+    setResetLinkSent(true);
+  };
 
   return (
     <Card className="md:min-w-lg min-w-full">

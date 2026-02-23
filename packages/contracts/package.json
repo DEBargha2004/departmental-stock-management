@@ -19,19 +19,19 @@
   },
   "exports": {
     "./user": {
-      "types": "./dist/user.d.ts",
+      "types": "./src/user.ts",
       "default": "./dist/user.js"
     },
     "./sign-in": {
-      "types": "./dist/auth/sign-in.d.ts",
+      "types": "./src/auth/sign-in.ts",
       "default": "./dist/auth/sign-in.js"
     },
     "./forget-password": {
-      "types": "./dist/auth/forget-password.d.ts",
+      "types": "./src/auth/forget-password.ts",
       "default": "./dist/auth/forget-password.js"
     },
     "./reset-password": {
-      "types": "./dist/auth/reset-password.d.ts",
+      "types": "./src/auth/reset-password.ts",
       "default": "./dist/auth/reset-password.js"
     }
   }

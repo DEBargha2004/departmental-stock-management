@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { signInSchema, type TSignIn } from '@repo/contracts/sign-in';
 import {
   forgetPasswordSchema,

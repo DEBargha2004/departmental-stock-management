@@ -25,8 +25,7 @@ export default function SignInPage() {
       return;
     }
 
-    const { data: jwt } = res.data;
-    login(jwt!);
+    login(res.data.data!);
   };
 
   return (

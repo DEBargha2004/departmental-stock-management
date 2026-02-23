@@ -13,6 +13,7 @@ import {
 import { user } from 'src/database/schema';
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 
+type TUserInfo = { name: string; email: string };
 @Injectable()
 export class UserService {
   constructor(@Inject(DATABASE_MODULE) public db: TDB) {}
@@ -34,7 +35,7 @@ export class UserService {
 
     return res[0];
   }
-  async createUser(userDto: TUserCreateSchema) {
+  async createUser(userDto: TUserInfo) {
     const [res] = await this.db
       .insert(user)
       .values({

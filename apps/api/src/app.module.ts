@@ -6,7 +6,7 @@ import config from './lib/config';
 import { DatabaseModule } from './database/db.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './authentication/auth.module';
 
 @Module({
   imports: [

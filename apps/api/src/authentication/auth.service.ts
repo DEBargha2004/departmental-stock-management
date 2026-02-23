@@ -76,6 +76,24 @@ export class AuthService {
     return res;
   }
 
+  async createCredentials(userId: number, password: string) {
+    const user = await this.userService.getUserById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const passwordHash = await this.hashPassword(password);
+    const [res] = await this.db
+      .insert(credentials)
+      .values({
+        userId,
+        password: passwordHash,
+      })
+      .returning();
+
+    if (!res) throw new NotFoundException('User not found');
+
+    return res;
+  }
+
   async signIn(payload: TSignIn) {
     const existingUser = await this.userService.getUserByEmail(payload.email);
     if (!existingUser) throw new UnauthorizedException('Invalid credentials');
