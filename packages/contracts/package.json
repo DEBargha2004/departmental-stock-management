@@ -33,6 +33,14 @@
     "./reset-password": {
       "types": "./src/auth/reset-password.ts",
       "default": "./dist/auth/reset-password.js"
+    },
+    "./vendor": {
+      "types": "./src/vendor.ts",
+      "default": "./dist/vendor.js"
+    },
+    "./filter": {
+      "types": "./src/filter.ts",
+      "default": "./dist/filter.js"
     }
   }
 }

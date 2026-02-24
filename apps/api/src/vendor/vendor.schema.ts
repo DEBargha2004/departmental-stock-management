@@ -11,4 +11,5 @@ export const vendor = pgTable('vendor', {
   email: text('email'),
   address: text('address'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
