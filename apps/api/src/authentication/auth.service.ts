@@ -9,7 +9,6 @@ import type { TSignIn } from '@repo/contracts/sign-in';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { UserService } from 'src/user/user.service';
 import { ConfigService } from '@nestjs/config';
-import { credentials, resetPasswordToken } from 'src/database/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { TConfig } from 'src/lib/config';
@@ -17,6 +16,7 @@ import jwt from 'jsonwebtoken';
 import { MailService } from 'src/mail/mail.service';
 import crypto from 'crypto';
 import type { TResetPassword } from '@repo/contracts/reset-password';
+import { credentials, resetPasswordToken } from './auth.schema';
 
 type TJWTPayload = TUserUpdateSchema & { id: number };
 

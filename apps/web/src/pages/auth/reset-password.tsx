@@ -8,9 +8,8 @@ import {
   resetPasswordSchema,
   type TResetPassword,
 } from "@repo/contracts/reset-password";
-import { use } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 export default function ResetPasswordPage() {

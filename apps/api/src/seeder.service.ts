@@ -1,11 +1,12 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from './database/db.module';
-import { role, user, userRole } from './database/schema';
+import { role, userRole } from './database/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ConfigService } from '@nestjs/config';
 import { TConfig } from './lib/config';
 import { UserService } from './user/user.service';
 import { AuthService } from './authentication/auth.service';
+import { user } from './user/user.schema';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
@@ -17,6 +18,10 @@ export class SeederService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {}
+
+  private async seedPermissions() {}
+
+  private async seedRoles() {}
 
   private async seedAdmin() {
     const [admin] = await this.db

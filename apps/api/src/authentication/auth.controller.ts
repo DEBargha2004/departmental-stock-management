@@ -4,7 +4,7 @@ import {
   forgetPasswordSchema,
   type TForgetPassword,
 } from '@repo/contracts/forget-password';
-import { ZodValidationPipe } from 'src/pipes/zod-validation.pipe';
+import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
 import {
   resetPasswordSchema,
   type TResetPassword,

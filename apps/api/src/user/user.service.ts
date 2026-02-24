@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { type TUserUpdateSchema } from '@repo/contracts/user';
-import { user } from 'src/database/schema';
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
+import { user } from './user.schema';
 
 type TUserInfo = { name: string; email: string };
 @Injectable()
