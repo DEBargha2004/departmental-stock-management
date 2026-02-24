@@ -10,15 +10,12 @@ import {
 } from "@repo/contracts/reset-password";
 import { use } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-export default function ResetPasswordPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
+export default function ResetPasswordPage() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") ?? "";
 
   const form = useForm<TResetPassword>({
     resolver: zodResolver(resetPasswordSchema),
