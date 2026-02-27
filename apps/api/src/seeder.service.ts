@@ -7,6 +7,10 @@ import { TConfig } from './lib/config';
 import { UserService } from './user/user.service';
 import { AuthService } from './authentication/auth.service';
 import { user } from './user/user.schema';
+import { AuthorizationService } from './authorization/authorization.service';
+import { PERMISSION_LIST } from './authorization/permissions.constants';
+import { ROLE_LIST, ROLES } from './authorization/roles.constants';
+import { ROLE_PERMISSION_LIST } from './authorization/role-permission.constants';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
@@ -15,13 +19,46 @@ export class SeederService implements OnModuleInit {
     private config: ConfigService<TConfig>,
     private userService: UserService,
     private authService: AuthService,
+    private authorizationService: AuthorizationService,
   ) {}
 
-  async onModuleInit() {}
+  async onModuleInit() {
+    await this.seedPermissions();
+    await this.seedRoles();
+  }
 
-  private async seedPermissions() {}
+  private async seedPermissions() {
+    const permissions = PERMISSION_LIST;
 
-  private async seedRoles() {}
+    const existingPermissions =
+      await this.authorizationService.getPermissions();
+
+    const newPermissions = permissions.filter(
+      (p) => !existingPermissions.some((ep) => ep.code === p),
+    );
+
+    await this.authorizationService.createPermissions(newPermissions);
+  }
+
+  private async seedRoles() {
+    const roles = ROLE_LIST;
+
+    const existingRoles = await this.authorizationService.getRoles();
+
+    const newRoles = roles.filter(
+      (r) => !existingRoles.some((er) => er.code === r),
+    );
+
+    await this.authorizationService.createRole(newRoles);
+  }
+
+  private async seedRolePermissions() {
+    // const rolePermissions = ROLE_PERMISSION_LIST;
+    // for (const rp of rolePermissions) {
+    //   const existingPermissions =
+    //     await this.authorizationService.getRolePermissions(rp.role);
+    // }
+  }
 
   private async seedAdmin() {
     const [admin] = await this.db
@@ -33,7 +70,7 @@ export class SeederService implements OnModuleInit {
         and(
           isNull(user.deletedAt),
           isNull(userRole.deletedAt),
-          eq(role.code, 'ADMIN'),
+          eq(role.code, ROLES.ADMIN),
         ),
       )
       .groupBy(user.id);

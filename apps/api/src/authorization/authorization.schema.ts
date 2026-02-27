@@ -4,12 +4,12 @@ import { primaryKey } from 'drizzle-orm/pg-core';
 import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { user } from 'src/user/user.schema';
-
-export type ROLE = 'ADMIN' | 'STAFF' | 'STUDENT';
+import { Permission } from './permissions.constants';
+import { Role } from './roles.constants';
 
 export const role = pgTable('role', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  code: text('code').$type<ROLE>().notNull(),
+  code: text('code').$type<Role>().notNull(),
 });
 
 export const userRole = pgTable(
@@ -30,7 +30,7 @@ export const userRole = pgTable(
 
 export const permission = pgTable('permission', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  code: text('code').notNull(),
+  code: text('code').$type<Permission>().notNull().unique(),
 });
 
 export const rolePermission = pgTable(

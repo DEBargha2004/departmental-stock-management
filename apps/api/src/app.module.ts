@@ -8,6 +8,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './authentication/auth.module';
 import { AuthorizationModule } from './authorization/authorization.module';
+import { SeederService } from './seeder.service';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { AuthorizationModule } from './authorization/authorization.module';
     AuthorizationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SeederService],
 })
 export class AppModule {}
