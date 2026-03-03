@@ -28,28 +28,35 @@ export class SeederService implements OnModuleInit {
   }
 
   private async seedPermissions() {
-    const permissions = PERMISSION_LIST;
+    const configPermissions = PERMISSION_LIST;
 
-    const existingPermissions =
-      await this.authorizationService.getPermissions();
+    const savedPermissions = await this.authorizationService.getPermissions();
 
-    const newPermissions = permissions.filter(
-      (p) => !existingPermissions.some((ep) => ep.code === p),
+    const newPermissions = configPermissions.filter(
+      (p) => !savedPermissions.some((ep) => ep.code === p),
     );
+    const existingPermissions = savedPermissions
+      .filter((p) => !configPermissions.some((cp) => cp === p.code))
+      .map((p) => p.code);
 
     await this.authorizationService.createPermissions(newPermissions);
+    await this.authorizationService.deletePermission(existingPermissions);
   }
 
   private async seedRoles() {
-    const roles = ROLE_LIST;
+    const configRoles = ROLE_LIST;
 
-    const existingRoles = await this.authorizationService.getRoles();
+    const savedRoles = await this.authorizationService.getRoles();
 
-    const newRoles = roles.filter(
-      (r) => !existingRoles.some((er) => er.code === r),
+    const newRoles = configRoles.filter(
+      (r) => !savedRoles.some((er) => er.code === r),
     );
+    const existingRoles = savedRoles
+      .filter((r) => !configRoles.some((cr) => cr === r.code))
+      .map((r) => r.code);
 
     await this.authorizationService.createRole(newRoles);
+    await this.authorizationService.deleteRole(existingRoles);
   }
 
   private async seedRolePermissions() {
@@ -69,7 +76,7 @@ export class SeederService implements OnModuleInit {
       .where(
         and(
           isNull(user.deletedAt),
-          isNull(userRole.deletedAt),
+          eq(userRole.isActive, true),
           eq(role.code, ROLES.ADMIN),
         ),
       )

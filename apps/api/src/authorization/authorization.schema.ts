@@ -6,10 +6,12 @@ import { pgTable } from 'drizzle-orm/pg-core';
 import { user } from 'src/user/user.schema';
 import { Permission } from './permissions.constants';
 import { Role } from './roles.constants';
+import { boolean } from 'drizzle-orm/pg-core';
 
 export const role = pgTable('role', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   code: text('code').$type<Role>().notNull(),
+  isActive: boolean('is_active').default(true),
 });
 
 export const userRole = pgTable(
@@ -23,14 +25,15 @@ export const userRole = pgTable(
       .notNull()
       .references(() => role.id),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    deletedAt: timestamp('deleted_at'),
+    isActive: boolean('as_active').default(true),
   },
   (table) => [primaryKey({ columns: [table.userId, table.roleId] })],
 );
 
 export const permission = pgTable('permission', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  code: text('code').$type<Permission>().notNull().unique(),
+  code: text('code').$type<Permission>().notNull(),
+  isActive: boolean('is_active').default(true),
 });
 
 export const rolePermission = pgTable(
@@ -44,6 +47,7 @@ export const rolePermission = pgTable(
       .notNull()
       .references(() => permission.id),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    isActve: boolean('is_active').default(true),
   },
   (table) => [primaryKey({ columns: [table.roleId, table.permissionId] })],
 );
