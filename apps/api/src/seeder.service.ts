@@ -25,6 +25,7 @@ export class SeederService implements OnModuleInit {
   async onModuleInit() {
     await this.seedPermissions();
     await this.seedRoles();
+    await this.seedRolePermissions();
   }
 
   private async seedPermissions() {
@@ -60,39 +61,54 @@ export class SeederService implements OnModuleInit {
   }
 
   private async seedRolePermissions() {
-    // const rolePermissions = ROLE_PERMISSION_LIST;
-    // for (const rp of rolePermissions) {
-    //   const existingPermissions =
-    //     await this.authorizationService.getRolePermissions(rp.role);
-    // }
+    const configRolePermissions =
+      await this.authorizationService.getNormalizeRolePermissions();
+
+    const savedRolePermissions =
+      await this.authorizationService.getRolePermissionList();
+
+    const newRolePermissions = configRolePermissions.filter(
+      (crp) =>
+        !savedRolePermissions.some(
+          (srp) =>
+            srp.role.id === crp.role.id &&
+            srp.permission.id === crp.permission.id,
+        ),
+    );
+
+    const existingRolePermissions = savedRolePermissions.filter(
+      (srp) =>
+        !configRolePermissions.some(
+          (crp) =>
+            crp.role.id === srp.role.id &&
+            crp.permission.id === srp.permission.id,
+        ),
+    );
+
+    await this.authorizationService.deleteRolePermission(
+      newRolePermissions.map((rp) => ({
+        roleId: rp.role.id,
+        permissionId: rp.permission.id,
+      })),
+    );
+
+    await this.authorizationService.deleteRolePermission(
+      existingRolePermissions.map((rp) => ({
+        roleId: rp.role.id,
+        permissionId: rp.permission.id,
+      })),
+    );
   }
 
   private async seedAdmin() {
-    const [admin] = await this.db
-      .select()
-      .from(user)
-      .leftJoin(userRole, eq(user.id, userRole.userId))
-      .leftJoin(role, eq(userRole.roleId, role.id))
-      .where(
-        and(
-          isNull(user.deletedAt),
-          eq(userRole.isActive, true),
-          eq(role.code, ROLES.ADMIN),
-        ),
-      )
-      .groupBy(user.id);
+    const admin = await this.authorizationService.getAdmin();
 
     if (!admin) {
       const username = this.config.get('admin_name', { infer: true })!;
       const email = this.config.get('admin_email', { infer: true })!;
       const password = this.config.get('admin_password', { infer: true })!;
 
-      const user = await this.userService.createUser({
-        name: username,
-        email,
-      });
-      await this.authService.createCredentials(user.id, password);
-      // TODO: assign admin role to the user
+      await this.authorizationService.createAdmin(username, email, password);
       console.log('Admin seeded successfully');
     } else {
       console.log('Admin already exists');

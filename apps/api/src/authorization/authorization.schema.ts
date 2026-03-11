@@ -25,7 +25,7 @@ export const userRole = pgTable(
       .notNull()
       .references(() => role.id),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    isActive: boolean('as_active').default(true),
+    isActive: boolean('is_active').default(true),
   },
   (table) => [primaryKey({ columns: [table.userId, table.roleId] })],
 );
@@ -47,7 +47,6 @@ export const rolePermission = pgTable(
       .notNull()
       .references(() => permission.id),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    isActve: boolean('is_active').default(true),
   },
   (table) => [primaryKey({ columns: [table.roleId, table.permissionId] })],
 );
