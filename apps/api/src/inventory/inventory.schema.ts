@@ -7,10 +7,11 @@ import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { vendor } from 'src/database/schema';
 import { user } from 'src/user/user.schema';
-
-export type STATUS = 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-export type MOVEMENT_TYPE = 'ISSUE' | 'RETURN' | 'DAMAGE' | 'ADJUSTMENT';
-export type PO_STATUS = 'DRAFT' | 'APPROVED' | 'RECEIVED';
+import type {
+  STATUS,
+  MOVEMENT_TYPE,
+  PO_STATUS,
+} from '@repo/contracts/inventory-status';
 
 // Inventory
 export const category = pgTable('category', {
