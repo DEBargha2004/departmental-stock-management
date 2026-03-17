@@ -18,6 +18,7 @@ export const category = pgTable('category', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const item = pgTable(
@@ -31,9 +32,9 @@ export const item = pgTable(
       .references(() => category.id),
 
     status: text('status').$type<STATUS>().notNull().default('DRAFT'),
-
     minStockLevel: integer('min_stock_level'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
   },
   (table) => [check('min_stock_level_check', sql`${item.minStockLevel} > 0`)],
 );
