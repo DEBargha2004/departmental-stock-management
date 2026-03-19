@@ -36,7 +36,7 @@ export const item = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'),
   },
-  (table) => [check('min_stock_level_check', sql`${item.minStockLevel} > 0`)],
+  (table) => [check('min_stock_level_check', sql`${table.minStockLevel} > 0`)],
 );
 
 // snapshot of stock
