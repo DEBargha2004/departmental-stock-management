@@ -7,16 +7,18 @@ import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { vendor } from 'src/database/schema';
 import { user } from 'src/user/user.schema';
-
-export type STATUS = 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-export type MOVEMENT_TYPE = 'ISSUE' | 'RETURN' | 'DAMAGE' | 'ADJUSTMENT';
-export type PO_STATUS = 'DRAFT' | 'APPROVED' | 'RECEIVED';
+import type {
+  STATUS,
+  MOVEMENT_TYPE,
+  PO_STATUS,
+} from '@repo/contracts/inventory-status';
 
 // Inventory
 export const category = pgTable('category', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const item = pgTable(
@@ -30,11 +32,11 @@ export const item = pgTable(
       .references(() => category.id),
 
     status: text('status').$type<STATUS>().notNull().default('DRAFT'),
-
     minStockLevel: integer('min_stock_level'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
   },
-  (table) => [check('min_stock_level_check', sql`${item.minStockLevel} > 0`)],
+  (table) => [check('min_stock_level_check', sql`${table.minStockLevel} > 0`)],
 );
 
 // snapshot of stock

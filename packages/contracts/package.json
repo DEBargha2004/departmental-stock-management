@@ -41,6 +41,18 @@
     "./filter": {
       "types": "./src/filter.ts",
       "default": "./dist/filter.js"
+    },
+    "./category": {
+      "types": "./src/inventory/category.ts",
+      "default": "./dist/inventory/category.js"
+    },
+    "./item": {
+      "types": "./src/inventory/item.ts",
+      "default": "./dist/inventory/item.js"
+    },
+    "./inventory-status": {
+      "types": "./src/inventory/status.ts",
+      "default": "./dist/inventory/status.ts"
     }
   }
 }
