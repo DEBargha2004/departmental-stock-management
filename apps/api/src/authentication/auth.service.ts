@@ -17,8 +17,9 @@ import { MailService } from 'src/mail/mail.service';
 import crypto from 'crypto';
 import type { TResetPassword } from '@repo/contracts/reset-password';
 import { credentials, resetPasswordToken } from './auth.schema';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 
-type TJWTPayload = TUserUpdateSchema & { id: number };
+type TJWTPayload = TUserUpdateSchema & { id: number; role: string[] };
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     private userService: UserService,
     private configService: ConfigService<TConfig>,
     private mailService: MailService,
+    private authorizationService: AuthorizationService,
   ) {}
 
   private createJWT(payload: TJWTPayload) {
@@ -43,10 +45,9 @@ export class AuthService {
     return token;
   }
 
-  validateJWT(token: string) {
+  static validateJWT(token: string, jwtSecret: string) {
     try {
-      const jwt_secret = this.configService.get('jwt_secret', { infer: true })!;
-      const decoded = jwt.verify(token, jwt_secret) as TJWTPayload;
+      const decoded = jwt.verify(token, jwtSecret) as TJWTPayload;
 
       return decoded;
     } catch (error) {
@@ -108,10 +109,15 @@ export class AuthService {
     if (!isPasswordMatch)
       throw new UnauthorizedException('Invalid credentials');
 
+    const userRoles = await this.authorizationService.getUserRoles(
+      existingUser.id,
+    );
+
     const jwt = this.createJWT({
       id: existingUser.id,
       name: existingUser.name,
       email: existingUser.email,
+      role: userRoles.map((ur) => ur.roleId.toString()),
     });
 
     return jwt;

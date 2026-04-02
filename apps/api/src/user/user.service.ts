@@ -35,7 +35,7 @@ export class UserService {
       .insert(user)
       .values({
         email: userDto.email,
-        name: userDto.email,
+        name: userDto.name,
       })
       .returning();
 

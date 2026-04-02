@@ -4,6 +4,7 @@ import SignInPage from "./pages/auth/sign-in";
 import ForgetPasswordPage from "./pages/auth/forget-password";
 import MainLayout from "./layouts/main-layout";
 import ResetPasswordPage from "./pages/auth/reset-password";
+import DashboardPage from "./pages/dashboard";
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
             Component: ResetPasswordPage,
           },
         ],
+      },
+      {
+        path: "dashboard",
+        Component: DashboardPage,
       },
     ],
   },

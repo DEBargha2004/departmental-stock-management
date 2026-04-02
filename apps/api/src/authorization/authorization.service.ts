@@ -10,8 +10,6 @@ import {
 import { Role } from './roles.constants';
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { ROLE_PERMISSION_LIST } from './role-permission.constants';
-import { UserService } from 'src/user/user.service';
-import { AuthService } from 'src/authentication/auth.service';
 import { user } from 'src/user/user.schema';
 
 type NormalizedRolePermission = {
@@ -20,11 +18,7 @@ type NormalizedRolePermission = {
 };
 @Injectable()
 export class AuthorizationService {
-  constructor(
-    @Inject(DATABASE_MODULE) private db: TDB,
-    private userService: UserService,
-    private authService: AuthService,
-  ) {}
+  constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
 
   async getPermissions() {
     return await this.db
@@ -197,15 +191,5 @@ export class AuthorizationService {
       );
 
     return admin;
-  }
-
-  async createAdmin(username: string, email: string, password: string) {
-    const roles = await this.getRoles();
-    const adminRole = roles.find((rl) => rl.code === 'admin');
-    if (!adminRole) throw new Error('Admin Role not found/seeded');
-
-    const user = await this.userService.createUser({ name: username, email });
-    await this.authService.createCredentials(user.id, password);
-    await this.createUserRole(user.id, adminRole.id);
   }
 }

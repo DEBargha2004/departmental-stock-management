@@ -8,6 +8,7 @@ import { useSignInMutation } from "@/features/auth/mutation";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { useAuth } from "@/providers/auth-provider";
+import { useNavigate } from "react-router";
 
 export default function SignInPage() {
   const form = useForm<TSignIn>({
@@ -16,6 +17,7 @@ export default function SignInPage() {
   });
   const { mutateAsync } = useSignInMutation();
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (data: TSignIn) => {
     const [err, res] = await catchError(mutateAsync(data));
@@ -26,6 +28,7 @@ export default function SignInPage() {
     }
 
     login(res.data.data!);
+    navigate("/dashboard");
   };
 
   return (

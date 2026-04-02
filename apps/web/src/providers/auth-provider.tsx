@@ -1,6 +1,5 @@
 import { AUTH_TOKEN } from "@/constants/id";
 import { createContext, useContext, useState } from "react";
-import { redirect } from "react-router";
 
 export type TAuthContext = {
   login: (token: string) => void;
@@ -18,11 +17,12 @@ export default function AuthProvider({
   const [token, setToken] = useState<string | null>(
     localStorage.getItem(AUTH_TOKEN),
   );
+  // const navigate = useNavigate();
 
   const login = (token: string) => {
     localStorage.setItem(AUTH_TOKEN, token);
     setToken(token);
-    redirect("/dashboard");
+    // navigate("/dashboard");
   };
 
   const logout = () => {

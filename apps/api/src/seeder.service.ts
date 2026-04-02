@@ -1,31 +1,37 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from './database/db.module';
-import { role, userRole } from './database/schema';
-import { and, eq, isNull } from 'drizzle-orm';
 import { ConfigService } from '@nestjs/config';
 import { TConfig } from './lib/config';
 import { UserService } from './user/user.service';
-import { AuthService } from './authentication/auth.service';
-import { user } from './user/user.schema';
 import { AuthorizationService } from './authorization/authorization.service';
 import { PERMISSION_LIST } from './authorization/permissions.constants';
 import { ROLE_LIST, ROLES } from './authorization/roles.constants';
-import { ROLE_PERMISSION_LIST } from './authorization/role-permission.constants';
+import { AuthService } from './authentication/auth.service';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
   constructor(
-    @Inject(DATABASE_MODULE) private db: TDB,
     private config: ConfigService<TConfig>,
     private userService: UserService,
-    private authService: AuthService,
     private authorizationService: AuthorizationService,
+    private authService: AuthService,
   ) {}
 
   async onModuleInit() {
     await this.seedPermissions();
     await this.seedRoles();
     await this.seedRolePermissions();
+    await this.seedAdmin();
+  }
+
+  async createAdmin(username: string, email: string, password: string) {
+    const roles = await this.authorizationService.getRoles();
+    const adminRole = roles.find((rl) => rl.code === 'admin');
+    if (!adminRole) throw new Error('Admin Role not found/seeded');
+
+    const user = await this.userService.createUser({ name: username, email });
+    await this.authService.createCredentials(user.id, password);
+    await this.authorizationService.createUserRole(user.id, adminRole.id);
   }
 
   private async seedPermissions() {
@@ -108,7 +114,7 @@ export class SeederService implements OnModuleInit {
       const email = this.config.get('admin_email', { infer: true })!;
       const password = this.config.get('admin_password', { infer: true })!;
 
-      await this.authorizationService.createAdmin(username, email, password);
+      await this.createAdmin(username, email, password);
       console.log('Admin seeded successfully');
     } else {
       console.log('Admin already exists');
