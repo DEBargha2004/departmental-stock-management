@@ -28,7 +28,7 @@ export default function SignInPage() {
     }
 
     login(res.data.data!);
-    navigate("/dashboard");
+    navigate("/");
   };
 
   return (

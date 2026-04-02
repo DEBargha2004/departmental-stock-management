@@ -5,6 +5,7 @@ import ForgetPasswordPage from "./pages/auth/forget-password";
 import MainLayout from "./layouts/main-layout";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import DashboardPage from "./pages/dashboard";
+import AppLayout from "./layouts/app-layout";
 
 export const router = createBrowserRouter([
   {
@@ -30,8 +31,13 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "dashboard",
-        Component: DashboardPage,
+        Component: AppLayout,
+        children: [
+          {
+            path: "/",
+            Component: DashboardPage,
+          },
+        ],
       },
     ],
   },
