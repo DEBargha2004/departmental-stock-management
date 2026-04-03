@@ -3,6 +3,7 @@ import { useSidebar } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { AlignJustify } from "lucide-react";
 import { ModeToggle } from "../ui/mode-toggle";
+import AppLogo from "./app-logo";
 
 export default function AppNavbar() {
   const { toggleSidebar } = useSidebar();
@@ -10,7 +11,7 @@ export default function AppNavbar() {
     <nav
       className={cn(
         "h-16 w-full sticky top-0 border-b px-4",
-        "flex items-center justify-between",
+        "flex items-center justify-start gap-3 bg-background",
       )}
     >
       <Button
@@ -21,6 +22,7 @@ export default function AppNavbar() {
       >
         <AlignJustify />
       </Button>
+      <AppLogo />
       <div className="ml-auto">
         <ModeToggle />
       </div>
