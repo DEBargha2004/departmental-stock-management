@@ -18,8 +18,9 @@ import crypto from 'crypto';
 import type { TResetPassword } from '@repo/contracts/reset-password';
 import { credentials, resetPasswordToken } from './auth.schema';
 import { AuthorizationService } from 'src/authorization/authorization.service';
+import { Role } from 'src/authorization/roles.constants';
 
-type TJWTPayload = TUserUpdateSchema & { id: number; role: string[] };
+export type TJWTPayload = TUserUpdateSchema & { id: number; role: Role };
 
 @Injectable()
 export class AuthService {
@@ -109,15 +110,11 @@ export class AuthService {
     if (!isPasswordMatch)
       throw new UnauthorizedException('Invalid credentials');
 
-    const userRoles = await this.authorizationService.getUserRoles(
-      existingUser.id,
-    );
-
     const jwt = this.createJWT({
       id: existingUser.id,
       name: existingUser.name,
       email: existingUser.email,
-      role: userRoles.map((ur) => ur.roleId.toString()),
+      role: existingUser.role,
     });
 
     return jwt;

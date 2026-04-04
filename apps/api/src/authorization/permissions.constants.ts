@@ -8,6 +8,11 @@ export const PERMISSIONS = {
   PRODUCT_READ: 'product.read',
   PRODUCT_UPDATE: 'product.update',
   PRODUCT_DELETE: 'product.delete',
+
+  USER_CREATE: 'user.create',
+  USER_READ: 'user.read',
+  USER_UPDATE: 'user.update',
+  USER_DELETE: 'user.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

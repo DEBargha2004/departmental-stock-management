@@ -53,6 +53,10 @@
     "./inventory-status": {
       "types": "./src/inventory/status.ts",
       "default": "./dist/inventory/status.ts"
+    },
+    "./query": {
+      "types": "./src/query.ts",
+      "default": "./dist/query.js"
     }
   }
 }

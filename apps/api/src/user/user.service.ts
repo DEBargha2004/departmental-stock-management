@@ -7,8 +7,9 @@ import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { type TUserUpdateSchema } from '@repo/contracts/user';
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { user } from './user.schema';
+import { Role } from 'src/authorization/roles.constants';
 
-type TUserInfo = { name: string; email: string };
+type TUserInfo = { name: string; email: string; role: Role };
 @Injectable()
 export class UserService {
   constructor(@Inject(DATABASE_MODULE) public db: TDB) {}
@@ -36,6 +37,7 @@ export class UserService {
       .values({
         email: userDto.email,
         name: userDto.name,
+        role: userDto.role,
       })
       .returning();
 
@@ -98,5 +100,14 @@ export class UserService {
       );
 
     return res;
+  }
+
+  async getAdmin() {
+    const [admin] = await this.db
+      .select()
+      .from(user)
+      .where(and(isNull(user.deletedAt), eq(user.role, 'admin')));
+
+    return admin;
   }
 }

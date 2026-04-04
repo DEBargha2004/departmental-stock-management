@@ -1,12 +1,15 @@
 import { text } from 'drizzle-orm/pg-core';
+import { jsonb } from 'drizzle-orm/pg-core';
 import { timestamp } from 'drizzle-orm/pg-core';
 import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
+import { Role } from 'src/authorization/roles.constants';
 
 export const user = pgTable('user', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
   email: text('email').notNull(),
+  role: jsonb().$type<Role>().notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });

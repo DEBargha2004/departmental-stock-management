@@ -10,7 +10,7 @@ type RolePermission = {
   permissions: Permission[];
 };
 
-export const ROLE_PERMISSION_LIST: RolePermission[] = [
+export const ROLE_PERMISSION_LIST = [
   {
     role: ROLES.ADMIN,
     permissions: [...PERMISSION_LIST],
@@ -23,4 +23,4 @@ export const ROLE_PERMISSION_LIST: RolePermission[] = [
     role: ROLES.STUDENT,
     permissions: [PERMISSIONS.PRODUCT_READ],
   },
-];
+] as const satisfies RolePermission[];

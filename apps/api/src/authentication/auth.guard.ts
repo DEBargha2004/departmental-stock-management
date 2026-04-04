@@ -1,7 +1,19 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  applyDecorators,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
+import { Permission } from 'src/authorization/permissions.constants';
+import {
+  PermissionGuard,
+  Permissions,
+} from 'src/authorization/permission.guard';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -16,8 +28,18 @@ export class AuthGuard implements CanActivate {
     const [_, token] = authHeader.split(' ');
 
     const isJwtValid = AuthService.validateJWT(token, jwt_secret);
-    if (isJwtValid) return true;
+    if (isJwtValid) {
+      request.jwt = isJwtValid;
+      return true;
+    }
 
-    return false;
+    throw new UnauthorizedException('Invalid token');
   }
 }
+
+export const Auth = (...permissions: Permission[]) => {
+  return applyDecorators(
+    UseGuards(AuthGuard, PermissionGuard),
+    Permissions(...permissions),
+  );
+};
