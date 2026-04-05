@@ -22,6 +22,10 @@
       "types": "./src/user.ts",
       "default": "./dist/user.js"
     },
+    "./roles": {
+      "types": "./src/auth/roles.ts",
+      "default": "./dist/auth/roles.js"
+    },
     "./sign-in": {
       "types": "./src/auth/sign-in.ts",
       "default": "./dist/auth/sign-in.js"

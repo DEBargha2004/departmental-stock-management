@@ -18,7 +18,7 @@ import crypto from 'crypto';
 import type { TResetPassword } from '@repo/contracts/reset-password';
 import { credentials, resetPasswordToken } from './auth.schema';
 import { AuthorizationService } from 'src/authorization/authorization.service';
-import { Role } from 'src/authorization/roles.constants';
+import { Role } from '@repo/contracts/roles';
 
 export type TJWTPayload = TUserUpdateSchema & { id: number; role: Role };
 
@@ -30,7 +30,6 @@ export class AuthService {
     private userService: UserService,
     private configService: ConfigService<TConfig>,
     private mailService: MailService,
-    private authorizationService: AuthorizationService,
   ) {}
 
   private createJWT(payload: TJWTPayload) {
@@ -79,9 +78,6 @@ export class AuthService {
   }
 
   async createCredentials(userId: number, password: string) {
-    const user = await this.userService.getUserById(userId);
-    if (!user) throw new NotFoundException('User not found');
-
     const passwordHash = await this.hashPassword(password);
     const [res] = await this.db
       .insert(credentials)
@@ -95,6 +91,8 @@ export class AuthService {
 
     return res;
   }
+
+  async updateCredentials(userId: number, password: string) {}
 
   async signIn(payload: TSignIn) {
     const existingUser = await this.userService.getUserByEmail(payload.email);

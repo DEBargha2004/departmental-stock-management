@@ -7,7 +7,8 @@ import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { type TUserUpdateSchema } from '@repo/contracts/user';
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { user } from './user.schema';
-import { Role } from 'src/authorization/roles.constants';
+import { TUserCreateSchema } from '@repo/contracts/user';
+import { type Role } from '@repo/contracts/roles';
 
 type TUserInfo = { name: string; email: string; role: Role };
 @Injectable()
@@ -44,12 +45,13 @@ export class UserService {
     return res;
   }
 
-  async updateUser(id: number, updateUserDto: TUserUpdateSchema) {
+  async updateUser(id: number, updateUserDto: TUserCreateSchema) {
     const [updatedUser] = await this.db
       .update(user)
       .set({
         name: updateUserDto.name,
         email: updateUserDto.email,
+        role: updateUserDto.role,
       })
       .returning();
 

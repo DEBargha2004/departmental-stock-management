@@ -3,7 +3,7 @@ import {
   PERMISSION_LIST,
   PERMISSIONS,
 } from './permissions.constants';
-import { Role, ROLES } from './roles.constants';
+import { type Role, ROLES } from '@repo/contracts/roles';
 
 type RolePermission = {
   role: Role;

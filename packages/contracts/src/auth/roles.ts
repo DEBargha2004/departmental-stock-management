@@ -1,7 +1,7 @@
 export const ROLES = {
-  ADMIN: 'admin',
-  FACULTY: 'faculty',
-  STUDENT: 'student',
+  ADMIN: "admin",
+  FACULTY: "faculty",
+  STUDENT: "student",
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
