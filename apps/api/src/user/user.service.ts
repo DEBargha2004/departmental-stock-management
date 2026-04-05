@@ -45,7 +45,7 @@ export class UserService {
     return res;
   }
 
-  async updateUser(id: number, updateUserDto: TUserCreateSchema) {
+  async updateUser(id: number, updateUserDto: TUserInfo) {
     const [updatedUser] = await this.db
       .update(user)
       .set({

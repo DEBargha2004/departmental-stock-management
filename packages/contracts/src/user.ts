@@ -1,21 +1,12 @@
 import z from "zod";
+import { ROLES } from "./auth/roles.js";
 
-export const userCreateSchema = z
-  .object({
-    name: z.string().nonempty(),
-    email: z.email(),
-    password: z.string().nonempty(),
-    confirmPassword: z.string().nonempty(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.password !== data.confirmPassword) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Password and Confirm Password does not match",
-        path: ["confirmPassword"],
-      });
-    }
-  });
+export const userCreateSchema = z.object({
+  name: z.string().nonempty(),
+  email: z.email(),
+  role: z.enum(ROLES),
+  password: z.string().nonempty(),
+});
 
 export const userUpdateSchema = z.object({
   name: z.string(),

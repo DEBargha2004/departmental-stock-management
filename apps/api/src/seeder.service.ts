@@ -1,16 +1,16 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TConfig } from './lib/config';
 import { UserService } from './user/user.service';
-import { ROLE_LIST, ROLES } from './authorization/roles.constants';
-import { AuthService } from './authentication/auth.service';
+import { ROLE_LIST } from '@repo/contracts/roles';
+import { UserManagementSevice } from './user-management/user-management.service';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
   constructor(
     private config: ConfigService<TConfig>,
     private userService: UserService,
-    private authService: AuthService,
+    private userManagementService: UserManagementSevice,
   ) {}
 
   async onModuleInit() {
@@ -22,12 +22,12 @@ export class SeederService implements OnModuleInit {
     const adminRole = roles.find((rl) => rl === 'admin');
     if (!adminRole) throw new Error('Admin Role not found/seeded');
 
-    const user = await this.userService.createUser({
+    await this.userManagementService.createUser({
       name: username,
       email,
+      password,
       role: 'admin',
     });
-    await this.authService.createCredentials(user.id, password);
   }
 
   private async seedAdmin() {

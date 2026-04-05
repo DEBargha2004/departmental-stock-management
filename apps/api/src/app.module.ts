@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './authentication/auth.module';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { SeederService } from './seeder.service';
+import { UserManagementModule } from './user-management/user-management.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SeederService } from './seeder.service';
     UserModule,
     AuthModule,
     AuthorizationModule,
+    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeederService],

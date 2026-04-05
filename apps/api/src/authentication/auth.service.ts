@@ -92,7 +92,18 @@ export class AuthService {
     return res;
   }
 
-  async updateCredentials(userId: number, password: string) {}
+  async updateCredentials(userId: number, password: string) {
+    const passwordHash = await this.hashPassword(password);
+    const [res] = await this.db
+      .update(credentials)
+      .set({ password: passwordHash })
+      .where(eq(credentials.userId, userId))
+      .returning();
+
+    if (!res) throw new NotFoundException('User not found');
+
+    return res;
+  }
 
   async signIn(payload: TSignIn) {
     const existingUser = await this.userService.getUserByEmail(payload.email);
@@ -176,5 +187,9 @@ export class AuthService {
     await this.db
       .delete(resetPasswordToken)
       .where(eq(resetPasswordToken.id, resetPasswordEntry.id));
+  }
+
+  async deleteCredentials(userId: number) {
+    await this.db.delete(credentials).where(eq(credentials.userId, userId));
   }
 }
