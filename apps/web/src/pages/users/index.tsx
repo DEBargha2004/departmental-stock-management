@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -26,6 +25,18 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
+import { getRoleObject, ROLES_FORMATTED } from "@repo/contracts/roles";
+import RoleBadge from "./_components/role-badge";
+import UserStatus from "./_components/user-status";
+import UserFormDialog from "./_components/form-dialog";
+import { userCreateSchema, type TUserCreateSchema } from "@repo/contracts/user";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { getDefaultUserCreateValues } from "@/constants/form-defaults/user-create";
+import { useCreateUserMutation } from "@/controllers/user/mutation";
+import { catchError } from "@/lib/catch-error";
+import { toast } from "sonner";
+import { useGetAllUsersQuery } from "@/controllers/user/query";
 
 // Mock user data
 const mockUsers = [
@@ -82,31 +93,40 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const form = useForm<TUserCreateSchema>({
+    resolver: zodResolver(userCreateSchema),
+    defaultValues: getDefaultUserCreateValues(),
+  });
+
+  const { data: usersList, isLoading } = useGetAllUsersQuery("");
+  const { mutateAsync: createUser } = useCreateUserMutation();
+
   // Filter users based on search and filters
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = usersList?.data.data?.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole =
       roleFilter === "all" || user.role.toLowerCase() === roleFilter;
-    const matchesStatus =
-      statusFilter === "all" || user.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole;
   });
 
   // Calculate pagination
-  const maxPage = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const maxPage = Math.max(1, Math.ceil(filteredUsers?.length ?? 0 / pageSize));
   const safePage = Math.min(currentPage, maxPage);
-  const paginatedUsers = filteredUsers.slice(
+  const paginatedUsers = filteredUsers?.slice(
     (safePage - 1) * pageSize,
     safePage * pageSize,
   );
 
   type User = (typeof mockUsers)[0];
 
-  const handleAddUser = () => {
-    // Handle add user logic here
-    console.log("Add user");
+  const handleAddUser = async (data: TUserCreateSchema) => {
+    const [err, res] = await catchError(createUser(data));
+
+    if (err) return toast.error(err.message);
+    toast.success(res.data.message);
+    form.reset();
   };
 
   const handleEditUser = (user: User) => {
@@ -136,13 +156,12 @@ export default function UsersPage() {
             Manage user accounts, roles, and permissions across the platform.
           </p>
         </div>
-        <Button
-          onClick={handleAddUser}
-          className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          <span className="font-medium">Add User</span>
-        </Button>
+        <UserFormDialog form={form} onSubmit={handleAddUser}>
+          <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            <span className="font-medium">Add User</span>
+          </Button>
+        </UserFormDialog>
       </div>
 
       {/* Filters Toolbar */}
@@ -166,10 +185,12 @@ export default function UsersPage() {
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent position="popper">
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="editor">Editor</SelectItem>
-              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+              {ROLES_FORMATTED.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -203,9 +224,7 @@ export default function UsersPage() {
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Role
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Status
-              </TableHead>
+
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Last Login
               </TableHead>
@@ -215,8 +234,8 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedUsers.length > 0 ? (
-              paginatedUsers.map((user) => (
+            {(paginatedUsers?.length ?? 0) > 0 ? (
+              paginatedUsers?.map((user) => (
                 <TableRow
                   key={user.id}
                   className="group hover:bg-muted/40 transition-colors border-input/40"
@@ -228,33 +247,11 @@ export default function UsersPage() {
                     {user.email}
                   </TableCell>
                   <TableCell className="py-3">
-                    <Badge
-                      variant="secondary"
-                      className={`font-medium text-xs px-2 py-0.5 rounded-md bg-opacity-15 ${
-                        user.role === "Admin"
-                          ? "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400"
-                          : user.role === "Editor"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400"
-                      }`}
-                    >
-                      {user.role}
-                    </Badge>
+                    <RoleBadge role={getRoleObject(user.role)?.id}>
+                      {getRoleObject(user.role)?.label}
+                    </RoleBadge>
                   </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          user.status === "Active"
-                            ? "bg-emerald-500"
-                            : "bg-neutral-400"
-                        }`}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {user.status}
-                      </span>
-                    </div>
-                  </TableCell>
+
                   <TableCell className="py-3 text-sm text-muted-foreground">
                     {user.lastLogin}
                   </TableCell>
@@ -334,9 +331,9 @@ export default function UsersPage() {
           </Select>
           <div className="h-4 w-px bg-input/40 mx-2" />
           <span className="font-medium">
-            {filteredUsers.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–
-            {Math.min(safePage * pageSize, filteredUsers.length)} of{" "}
-            {filteredUsers.length}
+            {filteredUsers?.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–
+            {Math.min(safePage * pageSize, filteredUsers?.length ?? 0)} of{" "}
+            {filteredUsers?.length ?? 0}
           </span>
         </div>
 

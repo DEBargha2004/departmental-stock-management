@@ -1,7 +1,7 @@
 import ResetPasswordForm from "@/components/custom/forms/reset-password";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDefaultResetPasswordValues } from "@/constants/form-defaults/reset-password";
-import { useResetPasswordMutation } from "@/features/auth/mutation";
+import { useResetPasswordMutation } from "@/controllers/auth/mutation";
 import { catchError } from "@/lib/catch-error";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {

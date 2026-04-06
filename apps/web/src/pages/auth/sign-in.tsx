@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { getDefaultSignInValues } from "@/constants/form-defaults/sign-in";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SignInForm from "@/components/custom/forms/sign-in";
-import { useSignInMutation } from "@/features/auth/mutation";
+import { useSignInMutation } from "@/controllers/auth/mutation";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { useAuth } from "@/providers/auth-provider";

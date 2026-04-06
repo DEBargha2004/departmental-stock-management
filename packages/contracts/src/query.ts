@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const query = z.object({
-  query: z.string().optional().default(""),
+  query: z.coerce.string<string>().optional().default(""),
   limit: z.coerce.number<number>().default(20),
 });
 

@@ -6,7 +6,7 @@ import MainLayout from "./layouts/main-layout";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import DashboardPage from "./pages/dashboard";
 import AppLayout from "./layouts/app-layout";
-import UsersPage from "./pages/users";
+import UsersPage from "./pages/users/index";
 import CategoriesPage from "./pages/categories";
 import ProductsPage from "./pages/products";
 import VendorsPage from "./pages/vendors";

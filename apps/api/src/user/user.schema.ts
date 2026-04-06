@@ -9,7 +9,7 @@ export const user = pgTable('user', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
   email: text('email').notNull(),
-  role: jsonb().$type<Role>().notNull(),
+  role: jsonb('role').$type<Role>().notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });

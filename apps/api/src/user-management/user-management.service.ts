@@ -53,4 +53,11 @@ export class UserManagementSevice {
 
     return user;
   }
+
+  async getUser(userId: number) {
+    const user = await this.userService.getUserById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
+  }
 }

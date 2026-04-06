@@ -1,7 +1,7 @@
 import ForgetPasswordForm from "@/components/custom/forms/forget-password";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDefaultForgetPasswordValues } from "@/constants/form-defaults/forget-password";
-import { useForgetPasswordMutation } from "@/features/auth/mutation";
+import { useForgetPasswordMutation } from "@/controllers/auth/mutation";
 import { catchError } from "@/lib/catch-error";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
