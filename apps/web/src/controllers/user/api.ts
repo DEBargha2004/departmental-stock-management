@@ -41,7 +41,11 @@ export async function getUserRequest(params: {
 }
 
 export async function getAllUsersRequest(
-  query?: string,
+  query: string,
+  role: string,
+  limit: number,
 ): Promise<AxiosResponse<TSuccess<TUser[]>>> {
-  return api.get(`${API_URL}/user/list?query=${query}`);
+  return api.get(
+    `${API_URL}/user/list?query=${query}&role=${role}&limit=${limit}`,
+  );
 }

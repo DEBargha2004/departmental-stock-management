@@ -9,8 +9,8 @@ import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { user } from './user.schema';
 import { TUserCreateSchema } from '@repo/contracts/user';
 import { type Role } from '@repo/contracts/roles';
+import { TUserInfo } from './user.utils';
 
-type TUserInfo = { name: string; email: string; role: Role };
 @Injectable()
 export class UserService {
   constructor(@Inject(DATABASE_MODULE) public db: TDB) {}
@@ -71,7 +71,15 @@ export class UserService {
     return deletedUser;
   }
 
-  async getUsers(query?: string) {
+  async getUsers({
+    query,
+    role,
+    limit = 20,
+  }: {
+    query?: string;
+    role?: Role;
+    limit: number;
+  }) {
     const res = await this.db
       .select()
       .from(user)
@@ -86,6 +94,7 @@ export class UserService {
                 ),
               ]
             : []),
+          ...(role ? [eq(user.role, role)] : []),
         ),
       )
       .orderBy(
@@ -99,7 +108,8 @@ export class UserService {
         `,
             )
           : desc(user.createdAt),
-      );
+      )
+      .limit(limit);
 
     return res;
   }

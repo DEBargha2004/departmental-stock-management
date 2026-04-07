@@ -27,7 +27,6 @@ import {
 import { useState } from "react";
 import { getRoleObject, ROLES_FORMATTED } from "@repo/contracts/roles";
 import RoleBadge from "./_components/role-badge";
-import UserStatus from "./_components/user-status";
 import UserFormDialog from "./_components/form-dialog";
 import { userCreateSchema, type TUserCreateSchema } from "@repo/contracts/user";
 import { useForm } from "react-hook-form";
@@ -37,72 +36,19 @@ import { useCreateUserMutation } from "@/controllers/user/mutation";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { useGetAllUsersQuery } from "@/controllers/user/query";
-import {
-  parseAsInteger,
-  parseAsString,
-  useQueryState,
-  useQueryStates,
-} from "nuqs";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useDebounce } from "@/hooks/use-debounce";
 
-// Mock user data
-const mockUsers = [
-  {
-    id: "1",
-    name: "Debargha Saha",
-    email: "",
-    role: "Admin",
-    status: "Active",
-    lastLogin: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Riya Sharma",
-    email: "[EMAIL_ADDRESS]",
-    role: "Editor",
-    status: "Active",
-    lastLogin: "2024-01-14",
-  },
-  {
-    id: "3",
-    name: "Amit Kumar",
-    email: "[EMAIL_ADDRESS]",
-    role: "Viewer",
-    status: "Inactive",
-    lastLogin: "2024-01-10",
-  },
-  {
-    id: "4",
-    name: "Priya Singh",
-    email: "[EMAIL_ADDRESS]",
-    role: "Editor",
-    status: "Active",
-    lastLogin: "2024-01-13",
-  },
-  {
-    id: "5",
-    name: "Vikram Malhotra",
-    email: "[EMAIL_ADDRESS]",
-    role: "Viewer",
-    status: "Active",
-    lastLogin: "2024-01-12",
-  },
-];
-
 const pageLimits = [5, 10, 20, 50];
-const statuses = ["Active", "Inactive"];
 
 export default function UsersPage() {
-  const [users] = useState(mockUsers);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [searchParams, setSearchParams] = useQueryStates({
     query: parseAsString.withDefault(""),
     limit: parseAsInteger.withDefault(20),
+    role: parseAsString.withDefault("all"),
   });
+
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
   const form = useForm<TUserCreateSchema>({
@@ -110,28 +56,26 @@ export default function UsersPage() {
     defaultValues: getDefaultUserCreateValues(),
   });
 
-  const { data: usersList, isLoading } = useGetAllUsersQuery(debouncedQuery);
+  const { data: usersList, isLoading } = useGetAllUsersQuery({
+    query: debouncedQuery,
+    role: searchParams.role === "all" ? "" : searchParams.role,
+    limit: searchParams.limit,
+  });
   const { mutateAsync: createUser } = useCreateUserMutation();
+  const dataList = usersList?.data.data;
 
   // Filter users based on search and filters
-  const filteredUsers = usersList?.data.data?.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole =
-      roleFilter === "all" || user.role.toLowerCase() === roleFilter;
-    return matchesSearch && matchesRole;
-  });
 
   // Calculate pagination
-  const maxPage = Math.max(1, Math.ceil(filteredUsers?.length ?? 0 / pageSize));
-  const safePage = Math.min(currentPage, maxPage);
-  const paginatedUsers = filteredUsers?.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
+  const maxPage = Math.max(
+    1,
+    Math.ceil(dataList?.length ?? 0 / searchParams.limit),
   );
-
-  type User = (typeof mockUsers)[0];
+  const safePage = Math.min(currentPage, maxPage);
+  const paginatedUsers = dataList?.slice(
+    (safePage - 1) * searchParams.limit,
+    safePage * searchParams.limit,
+  );
 
   const handleAddUser = async (data: TUserCreateSchema) => {
     const [err, res] = await catchError(createUser(data));
@@ -141,19 +85,19 @@ export default function UsersPage() {
     form.reset();
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (userId: number) => {
     // Handle edit user logic here
-    console.log("Edit user:", user);
+    console.log("Edit user:", userId);
   };
 
-  const handleDeleteUser = (user: User) => {
+  const handleDeleteUser = (userId: number) => {
     // Handle delete user logic here
-    console.log("Delete user:", user);
+    console.log("Delete user:", userId);
   };
 
-  const handleViewUser = (user: User) => {
+  const handleViewUser = (userId: number) => {
     // Handle view user logic here
-    console.log("View user:", user);
+    console.log("View user:", userId);
   };
 
   return (
@@ -191,7 +135,10 @@ export default function UsersPage() {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select
+            value={searchParams.role}
+            onValueChange={(e) => setSearchParams({ ...searchParams, role: e })}
+          >
             <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
@@ -200,20 +147,6 @@ export default function UsersPage() {
               {ROLES_FORMATTED.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="all">All Status</SelectItem>
-              {statuses.map((status) => (
-                <SelectItem key={status} value={status.toLowerCase()}>
-                  {status}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -234,10 +167,6 @@ export default function UsersPage() {
               </TableHead>
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Role
-              </TableHead>
-
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Last Login
               </TableHead>
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
                 Actions
@@ -262,17 +191,13 @@ export default function UsersPage() {
                       {getRoleObject(user.role)?.label}
                     </RoleBadge>
                   </TableCell>
-
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    {user.lastLogin}
-                  </TableCell>
                   <TableCell className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleViewUser(user)}
+                        onClick={() => handleViewUser(user.id)}
                       >
                         <Eye className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -280,7 +205,7 @@ export default function UsersPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditUser(user)}
+                        onClick={() => handleEditUser(user.id)}
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -288,7 +213,7 @@ export default function UsersPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteUser(user)}
+                        onClick={() => handleDeleteUser(user.id)}
                       >
                         <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -323,9 +248,9 @@ export default function UsersPage() {
             Rows per page
           </span>
           <Select
-            value={pageSize.toString()}
+            value={searchParams.limit.toString()}
             onValueChange={(val) => {
-              setPageSize(Number(val));
+              setSearchParams({ ...searchParams, limit: Number(val) });
               setCurrentPage(1);
             }}
           >
@@ -342,9 +267,11 @@ export default function UsersPage() {
           </Select>
           <div className="h-4 w-px bg-input/40 mx-2" />
           <span className="font-medium">
-            {filteredUsers?.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–
-            {Math.min(safePage * pageSize, filteredUsers?.length ?? 0)} of{" "}
-            {filteredUsers?.length ?? 0}
+            {dataList?.length === 0
+              ? 0
+              : (safePage - 1) * searchParams.limit + 1}
+            –{Math.min(safePage * searchParams.limit, dataList?.length ?? 0)} of{" "}
+            {dataList?.length ?? 0}
           </span>
         </div>
 

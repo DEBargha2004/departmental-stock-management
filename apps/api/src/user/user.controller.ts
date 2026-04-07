@@ -1,27 +1,11 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { Auth, AuthGuard } from 'src/authentication/auth.guard';
-import {
-  PermissionGuard,
-  Permissions,
-} from 'src/authorization/permission.guard';
-import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
-import { query, type TQuery } from '@repo/contracts/query';
-import { userCreateSchema, type TUserCreateSchema } from '@repo/contracts/user';
-import {} from '@repo/contracts/roles';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Auth } from 'src/authentication/auth.guard';
 import { UserService } from './user.service';
 import { ResponseBuilder } from 'src/lib/response';
-import { AuthService } from 'src/authentication/auth.service';
+import { CurrentUser } from './user.decorator';
+import type { TJWTPayload } from 'src/authentication/auth.service';
+import { buildUserObject } from './user.utils';
+import type { Role } from '@repo/contracts/roles';
 
 @Controller('user')
 export class UserController {
@@ -29,16 +13,27 @@ export class UserController {
 
   @Auth()
   @Get('')
-  async getCurrentUser() {
-    return 'Hello';
+  async getCurrentUser(@CurrentUser() jwt: TJWTPayload) {
+    return ResponseBuilder.success(buildUserObject(jwt));
+  }
+
+  @Auth('user.read')
+  @Get('list')
+  async getUsers(
+    @Query('query') query: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('role') role?: Role,
+  ) {
+    const users = await this.userService.getUsers({ query, role, limit });
+
+    return ResponseBuilder.success(users.map(buildUserObject));
   }
 
   @Auth('user.read')
   @Get(':id')
-  async getUser(@Param('id', ParseIntPipe) id: number) {}
+  async getUser(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.userService.getUserById(id);
 
-  @UseGuards(AuthGuard, PermissionGuard)
-  @Permissions('user.read')
-  @Get('list')
-  async getUsers(@Query('query') query: string) {}
+    return ResponseBuilder.success(buildUserObject(user));
+  }
 }

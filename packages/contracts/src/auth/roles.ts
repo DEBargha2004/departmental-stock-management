@@ -24,5 +24,5 @@ export const ROLES_FORMATTED = [
 ] as const satisfies { id: Role; label: string }[];
 
 export const getRoleObject = (role: Role) => {
-  return ROLES_FORMATTED.find((r) => r.id === role);
+  return ROLES_FORMATTED.find((r) => r.id === role)!;
 };
