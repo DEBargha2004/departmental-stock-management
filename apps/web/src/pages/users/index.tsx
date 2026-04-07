@@ -37,6 +37,13 @@ import { useCreateUserMutation } from "@/controllers/user/mutation";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { useGetAllUsersQuery } from "@/controllers/user/query";
+import {
+  parseAsInteger,
+  parseAsString,
+  useQueryState,
+  useQueryStates,
+} from "nuqs";
+import { useDebounce } from "@/hooks/use-debounce";
 
 // Mock user data
 const mockUsers = [
@@ -92,13 +99,18 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchParams, setSearchParams] = useQueryStates({
+    query: parseAsString.withDefault(""),
+    limit: parseAsInteger.withDefault(20),
+  });
+  const debouncedQuery = useDebounce(searchParams.query, 500);
 
   const form = useForm<TUserCreateSchema>({
     resolver: zodResolver(userCreateSchema),
     defaultValues: getDefaultUserCreateValues(),
   });
 
-  const { data: usersList, isLoading } = useGetAllUsersQuery("");
+  const { data: usersList, isLoading } = useGetAllUsersQuery(debouncedQuery);
   const { mutateAsync: createUser } = useCreateUserMutation();
 
   // Filter users based on search and filters
@@ -167,15 +179,14 @@ export default function UsersPage() {
       {/* Filters Toolbar */}
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
         <div className="relative flex-1 w-full sm:max-w-xs">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-            strokeWidth={1.5}
-          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users..."
             className="pl-9 h-9 w-full bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchParams.query}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, query: e.target.value })
+            }
           />
         </div>
 

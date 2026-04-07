@@ -5,10 +5,11 @@ import { RouterProvider } from "react-router/dom";
 import { router } from "./routes";
 import AuthProvider from "./providers/auth-provider";
 import { Toaster } from "./components/ui/sonner";
+import { NuqsAdapter } from "nuqs/adapters/react";
 
 function App() {
   return (
-    <>
+    <NuqsAdapter>
       <QueryProvider>
         <AuthProvider>
           <ThemeProvider>
@@ -19,7 +20,7 @@ function App() {
           </ThemeProvider>
         </AuthProvider>
       </QueryProvider>
-    </>
+    </NuqsAdapter>
   );
 }
 

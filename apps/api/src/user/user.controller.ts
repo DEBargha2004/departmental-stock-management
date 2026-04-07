@@ -40,5 +40,5 @@ export class UserController {
   @UseGuards(AuthGuard, PermissionGuard)
   @Permissions('user.read')
   @Get('list')
-  async getUsers(@Query(new ZodValidationPipe(query)) query: TQuery) {}
+  async getUsers(@Query('query') query: string) {}
 }
