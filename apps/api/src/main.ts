@@ -4,10 +4,21 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { TConfig } from './lib/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { MigrationService } from './database/migration.service';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService<TConfig>);
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const db = drizzle(pool);
+
+  console.log('Running migrations...');
+  await migrate(db, { migrationsFolder: path.join(__dirname, '../drizzle') });
 
   const config = new DocumentBuilder()
     .setTitle('Stock Management API')

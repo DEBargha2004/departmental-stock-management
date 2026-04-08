@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { type TUserUpdateSchema } from '@repo/contracts/user';
-import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { user } from './user.schema';
 import { TUserCreateSchema } from '@repo/contracts/user';
 import { type Role } from '@repo/contracts/roles';
@@ -80,7 +80,7 @@ export class UserService {
     role?: Role;
     limit: number;
   }) {
-    const res = await this.db
+    const baseQuery = this.db
       .select()
       .from(user)
       .where(
@@ -108,10 +108,14 @@ export class UserService {
         `,
             )
           : desc(user.createdAt),
-      )
-      .limit(limit);
+      );
 
-    return res;
+    const [users, [totalRes]] = await Promise.all([
+      baseQuery.limit(limit),
+      this.db.select({ count: count() }).from(baseQuery.as('subquery')),
+    ]);
+
+    return { users, count: totalRes.count };
   }
 
   async getAdmin() {

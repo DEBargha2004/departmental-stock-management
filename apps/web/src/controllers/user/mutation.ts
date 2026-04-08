@@ -1,15 +1,38 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createUserRequest,
   updateUserRequest,
   deleteUserRequest,
 } from "@/controllers/user/api";
 
-export const useCreateUserMutation = () =>
-  useMutation({ mutationFn: createUserRequest });
+export const useCreateUserMutation = () => {
+  const queryClient = useQueryClient();
 
-export const useUpdateUserMutation = () =>
-  useMutation({ mutationFn: updateUserRequest });
+  return useMutation({
+    mutationFn: createUserRequest,
+    onSuccess(data, variables, onMutateResult, context) {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
 
-export const useDeleteUserMutation = () =>
-  useMutation({ mutationFn: deleteUserRequest });
+export const useUpdateUserMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateUserRequest,
+    onSuccess(data, variables, onMutateResult, context) {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useDeleteUserMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteUserRequest,
+    onSuccess(data, variables, onMutateResult, context) {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};

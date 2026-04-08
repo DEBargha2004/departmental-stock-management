@@ -24,9 +24,12 @@ export class UserController {
     @Query('limit', ParseIntPipe) limit: number,
     @Query('role') role?: Role,
   ) {
-    const users = await this.userService.getUsers({ query, role, limit });
+    const res = await this.userService.getUsers({ query, role, limit });
 
-    return ResponseBuilder.success(users.map(buildUserObject));
+    return ResponseBuilder.success({
+      list: res.users.map(buildUserObject),
+      count: res.count,
+    });
   }
 
   @Auth('user.read')

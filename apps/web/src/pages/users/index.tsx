@@ -64,15 +64,13 @@ export default function UsersPage() {
   const { mutateAsync: createUser } = useCreateUserMutation();
   const dataList = usersList?.data.data;
 
-  // Filter users based on search and filters
-
   // Calculate pagination
   const maxPage = Math.max(
     1,
-    Math.ceil(dataList?.length ?? 0 / searchParams.limit),
+    Math.ceil(dataList?.list.length ?? 0 / searchParams.limit),
   );
   const safePage = Math.min(currentPage, maxPage);
-  const paginatedUsers = dataList?.slice(
+  const paginatedUsers = dataList?.list.slice(
     (safePage - 1) * searchParams.limit,
     safePage * searchParams.limit,
   );
@@ -267,11 +265,15 @@ export default function UsersPage() {
           </Select>
           <div className="h-4 w-px bg-input/40 mx-2" />
           <span className="font-medium">
-            {dataList?.length === 0
+            {dataList?.list.length === 0
               ? 0
               : (safePage - 1) * searchParams.limit + 1}
-            –{Math.min(safePage * searchParams.limit, dataList?.length ?? 0)} of{" "}
-            {dataList?.length ?? 0}
+            –
+            {Math.min(
+              safePage * searchParams.limit,
+              dataList?.list.length ?? 0,
+            )}{" "}
+            of {dataList?.list.length ?? 0}
           </span>
         </div>
 

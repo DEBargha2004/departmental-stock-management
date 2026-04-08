@@ -1,5 +1,6 @@
 import { API_URL } from "@/constants/api";
 import { api } from "@/lib/axios";
+import type { PaginatedListResponse } from "@/types/list-response";
 import type { TSuccess } from "@/types/response";
 import type { Role } from "@repo/contracts/roles";
 import type { TUserCreateSchema } from "@repo/contracts/user";
@@ -44,7 +45,7 @@ export async function getAllUsersRequest(
   query: string,
   role: string,
   limit: number,
-): Promise<AxiosResponse<TSuccess<TUser[]>>> {
+): Promise<AxiosResponse<TSuccess<PaginatedListResponse<TUser[]>>>> {
   return api.get(
     `${API_URL}/user/list?query=${query}&role=${role}&limit=${limit}`,
   );

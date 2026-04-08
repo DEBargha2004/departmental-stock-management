@@ -9,14 +9,21 @@ import {
 } from "@/components/ui/dialog";
 import type { TFormProps } from "@/types/form-props";
 import type { TUserCreateSchema } from "@repo/contracts/user";
+import { useEffect, useState } from "react";
 
 export default function UserFormDialog({
   form,
   onSubmit,
   children,
 }: TFormProps<TUserCreateSchema> & { children: React.ReactNode }) {
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const isSubmitSuccessful = form.formState.isSubmitSuccessful;
+
+  useEffect(() => {
+    setDialogOpen(false);
+  }, [isSubmitSuccessful]);
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
