@@ -17,7 +17,7 @@ import { ResponseBuilder } from 'src/lib/response';
 export class UserManagementController {
   constructor(private userManagementService: UserManagementSevice) {}
 
-  @Auth('user.create')
+  @Auth('user.create', 'auth.create')
   @Post('create')
   async createUser(
     @Body(new ZodValidationPipe(userCreateSchema)) payload: TUserCreateSchema,
@@ -27,7 +27,7 @@ export class UserManagementController {
     return ResponseBuilder.success(res, 'User created successfully');
   }
 
-  @Auth('user.update')
+  @Auth('user.update', 'auth.update')
   @Post('edit/:id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
@@ -38,7 +38,7 @@ export class UserManagementController {
     return ResponseBuilder.success(res, 'User updated succecssfully');
   }
 
-  @Auth('user.delete')
+  @Auth('user.delete', 'auth.delete')
   @Delete(':id')
   async deleteUser(@Param('id', ParseIntPipe) id: number) {
     await this.userManagementService.deleteUser(id);

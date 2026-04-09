@@ -20,7 +20,7 @@ export async function createUserRequest(
 }
 
 export async function updateUserRequest(params: {
-  id: string;
+  id: number;
   payload: TUserCreateSchema;
 }): Promise<AxiosResponse<TSuccess<TUser>>> {
   return api.put(
@@ -30,14 +30,14 @@ export async function updateUserRequest(params: {
 }
 
 export async function deleteUserRequest(params: {
-  id: string;
+  id: number;
 }): Promise<AxiosResponse<TSuccess<null>>> {
   return api.delete(`${API_URL}/user-management/${params.id}`);
 }
 
 export async function getUserRequest(params: {
-  id: string;
-}): Promise<AxiosResponse<TSuccess<TUser>>> {
+  id: number;
+}): Promise<AxiosResponse<TSuccess<TUser & { password: string }>>> {
   return api.get(`${API_URL}/user/${params.id}`);
 }
 
@@ -45,8 +45,9 @@ export async function getAllUsersRequest(
   query: string,
   role: string,
   limit: number,
+  page: number,
 ): Promise<AxiosResponse<TSuccess<PaginatedListResponse<TUser[]>>>> {
   return api.get(
-    `${API_URL}/user/list?query=${query}&role=${role}&limit=${limit}`,
+    `${API_URL}/user/list?query=${query}&role=${role}&limit=${limit}&page=${page}`,
   );
 }

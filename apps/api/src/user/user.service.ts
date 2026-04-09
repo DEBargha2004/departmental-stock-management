@@ -75,10 +75,12 @@ export class UserService {
     query,
     role,
     limit = 20,
+    page = 1,
   }: {
     query?: string;
     role?: Role;
     limit: number;
+    page: number;
   }) {
     const baseQuery = this.db
       .select()
@@ -108,11 +110,18 @@ export class UserService {
         `,
             )
           : desc(user.createdAt),
-      );
+      )
+      .as('base_query');
+
+    const selectQuery = this.db
+      .select()
+      .from(baseQuery)
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     const [users, [totalRes]] = await Promise.all([
-      baseQuery.limit(limit),
-      this.db.select({ count: count() }).from(baseQuery.as('subquery')),
+      selectQuery,
+      this.db.select({ count: count() }).from(baseQuery),
     ]);
 
     return { users, count: totalRes.count };

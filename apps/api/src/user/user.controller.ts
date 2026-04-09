@@ -22,9 +22,10 @@ export class UserController {
   async getUsers(
     @Query('query') query: string,
     @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
     @Query('role') role?: Role,
   ) {
-    const res = await this.userService.getUsers({ query, role, limit });
+    const res = await this.userService.getUsers({ query, role, limit, page });
 
     return ResponseBuilder.success({
       list: res.users.map(buildUserObject),

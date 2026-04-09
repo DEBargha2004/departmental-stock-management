@@ -13,6 +13,10 @@ export const PERMISSIONS = {
   USER_READ: 'user.read',
   USER_UPDATE: 'user.update',
   USER_DELETE: 'user.delete',
+
+  AUTH_CREATE: 'auth.create',
+  AUTH_UPDATE: 'auth.update',
+  AUTH_DELETE: 'auth.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

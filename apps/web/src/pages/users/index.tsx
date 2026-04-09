@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -15,19 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { useState } from "react";
+import { Search, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { getRoleObject, ROLES_FORMATTED } from "@repo/contracts/roles";
 import RoleBadge from "./_components/role-badge";
-import UserFormDialog from "./_components/form-dialog";
 import { userCreateSchema, type TUserCreateSchema } from "@repo/contracts/user";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,17 +37,22 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import ControlledFormDialog from "@/components/custom/controlled-form-dialog";
+import CreateUserForm from "@/components/custom/forms/user-create";
+import { getUserRequest } from "@/controllers/user/api";
+import { useRef } from "react";
 
 const pageLimits = [5, 10, 20, 50];
 
 export default function UsersPage() {
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useQueryStates({
     query: parseAsString.withDefault(""),
     limit: parseAsInteger.withDefault(20),
     role: parseAsString.withDefault("all"),
     page: parseAsInteger.withDefault(1),
   });
+  const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
+  const activeUpdateUser = useRef<number | null>(null);
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
@@ -69,27 +65,18 @@ export default function UsersPage() {
     query: debouncedQuery,
     role: searchParams.role === "all" ? "" : searchParams.role,
     limit: searchParams.limit,
+    page: searchParams.page,
   });
   const { mutateAsync: createUser } = useCreateUserMutation();
+
   const dataList = usersList?.data.data;
   const firstPage = 1;
   const lastPage = Math.max(
     1,
-    Math.floor((dataList?.count ?? 0) % searchParams.limit),
+    Math.ceil((dataList?.count ?? 0) / searchParams.limit),
   );
   const prevPage = Math.max(firstPage, searchParams.page - 1);
   const nextPage = Math.min(lastPage, searchParams.page + 1);
-
-  // Calculate pagination
-  const maxPage = Math.max(
-    1,
-    Math.ceil(dataList?.list.length ?? 0 / searchParams.limit),
-  );
-  const safePage = Math.min(currentPage, maxPage);
-  const paginatedUsers = dataList?.list.slice(
-    (safePage - 1) * searchParams.limit,
-    safePage * searchParams.limit,
-  );
 
   const handleAddUser = async (data: TUserCreateSchema) => {
     const [err, res] = await catchError(createUser(data));
@@ -99,9 +86,21 @@ export default function UsersPage() {
     form.reset();
   };
 
-  const handleEditUser = (userId: number) => {
-    // Handle edit user logic here
-    console.log("Edit user:", userId);
+  const handleEditUserButtonClick = async (userId: number) => {
+    const [err, res] = await catchError(getUserRequest({ id: userId }));
+    if (err) return toast.error(err.message);
+
+    const btn = updateEntryButtonRef.current;
+    const { data } = res.data;
+    if (btn) {
+      activeUpdateUser.current = userId;
+      btn.click();
+      form.reset({
+        email: data?.email ?? "",
+        name: data?.name ?? "",
+        role: data?.role ?? "student",
+      });
+    }
   };
 
   const handleDeleteUser = (userId: number) => {
@@ -126,12 +125,38 @@ export default function UsersPage() {
             Manage user accounts, roles, and permissions across the platform.
           </p>
         </div>
-        <UserFormDialog form={form} onSubmit={handleAddUser}>
+        <ControlledFormDialog
+          form={form}
+          onSubmit={handleAddUser}
+          FormComponent={CreateUserForm}
+          heading={{
+            title: "Create User",
+            description: "Create a new user account",
+          }}
+        >
           <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
             <Plus className="h-4 w-4" strokeWidth={2} />
             <span className="font-medium">Add User</span>
           </Button>
-        </UserFormDialog>
+        </ControlledFormDialog>
+        <ControlledFormDialog
+          form={form}
+          onSubmit={handleAddUser}
+          FormComponent={CreateUserForm}
+          heading={{
+            title: "Create User",
+            description: "Create a new user account",
+          }}
+        >
+          <Button
+            className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm"
+            ref={updateEntryButtonRef}
+            hidden
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            <span className="font-medium">Add User</span>
+          </Button>
+        </ControlledFormDialog>
       </div>
 
       {/* Filters Toolbar */}
@@ -188,8 +213,29 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(paginatedUsers?.length ?? 0) > 0 ? (
-              paginatedUsers?.map((user) => (
+            {isLoading ? (
+              Array.from({ length: searchParams.limit }).map((_, index) => (
+                <TableRow key={index} className="border-input/40">
+                  <TableCell className="py-3">
+                    <Skeleton className="h-5 w-32" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-5 w-48" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell className="py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (dataList?.list.length ?? 0) > 0 ? (
+              dataList?.list?.map((user) => (
                 <TableRow
                   key={user.id}
                   className="group hover:bg-muted/40 transition-colors border-input/40"
@@ -219,7 +265,7 @@ export default function UsersPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditUser(user.id)}
+                        onClick={() => handleEditUserButtonClick(user.id)}
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -264,8 +310,7 @@ export default function UsersPage() {
           <Select
             value={searchParams.limit.toString()}
             onValueChange={(val) => {
-              setSearchParams({ ...searchParams, limit: Number(val) });
-              setCurrentPage(1);
+              setSearchParams({ ...searchParams, limit: Number(val), page: 1 });
             }}
           >
             <SelectTrigger className="h-7 w-fit gap-1.5 bg-transparent border-0 shadow-none focus:ring-0 text-foreground font-medium p-1 px-2 hover:bg-muted/50 rounded transition-colors">
@@ -283,48 +328,33 @@ export default function UsersPage() {
           <span className="font-medium">
             {dataList?.list.length === 0
               ? 0
-              : (safePage - 1) * searchParams.limit + 1}
-            –
-            {Math.min(
-              safePage * searchParams.limit,
-              dataList?.list.length ?? 0,
-            )}{" "}
-            of {dataList?.count}
+              : (searchParams.page - 1) * searchParams.limit + 1}
+            -{Math.min(1 * searchParams.limit, dataList?.list.length ?? 0)} of{" "}
+            {dataList?.count}
           </span>
         </div>
 
         <div className="flex items-center gap-1 border border-input/40 rounded-lg p-0.5 bg-card shadow-sm">
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-md bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-            disabled={safePage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-          </Button>
-          <div className="flex items-center justify-center min-w-[2.5rem] font-medium text-foreground tabular-nums">
-            {safePage} / {maxPage}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-md bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-            disabled={safePage === maxPage}
-            onClick={() => setCurrentPage((p) => Math.min(maxPage, p + 1))}
-          >
-            <ChevronRight className="h-4 w-4" strokeWidth={2} />
-          </Button> */}
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious />
+                <PaginationPrevious
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setSearchParams({ ...searchParams, page: prevPage })
+                  }
+                />
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink>{searchParams.page}</PaginationLink>
               </PaginationItem>
               <PaginationItem>
-                <PaginationNext />
+                <PaginationNext
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setSearchParams({ ...searchParams, page: nextPage })
+                  }
+                />
               </PaginationItem>
             </PaginationContent>
           </Pagination>

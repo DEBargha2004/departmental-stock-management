@@ -10,7 +10,7 @@ export const useCreateUserMutation = () => {
 
   return useMutation({
     mutationFn: createUserRequest,
-    onSuccess(data, variables, onMutateResult, context) {
+    onSuccess() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
@@ -21,7 +21,7 @@ export const useUpdateUserMutation = () => {
 
   return useMutation({
     mutationFn: updateUserRequest,
-    onSuccess(data, variables, onMutateResult, context) {
+    onSuccess() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
@@ -31,7 +31,7 @@ export const useDeleteUserMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteUserRequest,
-    onSuccess(data, variables, onMutateResult, context) {
+    onSuccess() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });

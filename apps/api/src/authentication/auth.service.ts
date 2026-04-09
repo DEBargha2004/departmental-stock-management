@@ -60,6 +60,7 @@ export class AuthService {
       .select()
       .from(credentials)
       .where(eq(credentials.userId, id));
+
     return res;
   }
 
