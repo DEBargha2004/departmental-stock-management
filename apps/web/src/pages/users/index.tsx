@@ -38,6 +38,14 @@ import { toast } from "sonner";
 import { useGetAllUsersQuery } from "@/controllers/user/query";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useDebounce } from "@/hooks/use-debounce";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const pageLimits = [5, 10, 20, 50];
 
@@ -47,6 +55,7 @@ export default function UsersPage() {
     query: parseAsString.withDefault(""),
     limit: parseAsInteger.withDefault(20),
     role: parseAsString.withDefault("all"),
+    page: parseAsInteger.withDefault(1),
   });
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
@@ -63,6 +72,13 @@ export default function UsersPage() {
   });
   const { mutateAsync: createUser } = useCreateUserMutation();
   const dataList = usersList?.data.data;
+  const firstPage = 1;
+  const lastPage = Math.max(
+    1,
+    Math.floor((dataList?.count ?? 0) % searchParams.limit),
+  );
+  const prevPage = Math.max(firstPage, searchParams.page - 1);
+  const nextPage = Math.min(lastPage, searchParams.page + 1);
 
   // Calculate pagination
   const maxPage = Math.max(
@@ -273,12 +289,12 @@ export default function UsersPage() {
               safePage * searchParams.limit,
               dataList?.list.length ?? 0,
             )}{" "}
-            of {dataList?.list.length ?? 0}
+            of {dataList?.count}
           </span>
         </div>
 
         <div className="flex items-center gap-1 border border-input/40 rounded-lg p-0.5 bg-card shadow-sm">
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 rounded-md bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
@@ -298,7 +314,20 @@ export default function UsersPage() {
             onClick={() => setCurrentPage((p) => Math.min(maxPage, p + 1))}
           >
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
-          </Button>
+          </Button> */}
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>{searchParams.page}</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </div>
     </div>
