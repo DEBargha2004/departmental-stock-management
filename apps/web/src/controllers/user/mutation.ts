@@ -4,14 +4,19 @@ import {
   updateUserRequest,
   deleteUserRequest,
 } from "@/controllers/user/api";
+import { toast } from "sonner";
 
 export const useCreateUserMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createUserRequest,
-    onSuccess() {
+    onSuccess(data) {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success(`User ${data?.data.data?.name} created successfully`);
+    },
+    onError(error) {
+      toast.error(error.message);
     },
   });
 };
@@ -21,18 +26,27 @@ export const useUpdateUserMutation = () => {
 
   return useMutation({
     mutationFn: updateUserRequest,
-    onSuccess() {
+    onSettled(data) {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success(`User ${data?.data.data?.name} updated successfully`);
+    },
+    onError(error) {
+      toast.error(error.message);
     },
   });
 };
 
 export const useDeleteUserMutation = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: deleteUserRequest,
-    onSuccess() {
+    onSuccess(data) {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success(data.data.message);
+    },
+    onError(error) {
+      toast.error(error.message);
     },
   });
 };

@@ -10,7 +10,12 @@ import {
 import { UserManagementSevice } from './user-management.service';
 import { Auth } from 'src/authentication/auth.guard';
 import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
-import { type TUserCreateSchema, userCreateSchema } from '@repo/contracts/user';
+import {
+  type TUserCreateSchema,
+  type TUserUpdateSchema,
+  userCreateSchema,
+  userUpdateSchema,
+} from '@repo/contracts/user';
 import { ResponseBuilder } from 'src/lib/response';
 
 @Controller('user-management')
@@ -27,11 +32,11 @@ export class UserManagementController {
     return ResponseBuilder.success(res, 'User created successfully');
   }
 
-  @Auth('user.update', 'auth.update')
+  @Auth('user.update')
   @Post('edit/:id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(userCreateSchema)) payload: TUserCreateSchema,
+    @Body(new ZodValidationPipe(userUpdateSchema)) payload: TUserUpdateSchema,
   ) {
     const res = await this.userManagementService.updateUser(id, payload);
 

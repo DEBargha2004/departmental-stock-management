@@ -3,7 +3,10 @@ import { api } from "@/lib/axios";
 import type { PaginatedListResponse } from "@/types/list-response";
 import type { TSuccess } from "@/types/response";
 import type { Role } from "@repo/contracts/roles";
-import type { TUserCreateSchema } from "@repo/contracts/user";
+import type {
+  TUserCreateSchema,
+  TUserUpdateSchema,
+} from "@repo/contracts/user";
 import type { AxiosResponse } from "axios";
 
 type TUser = {
@@ -21,9 +24,9 @@ export async function createUserRequest(
 
 export async function updateUserRequest(params: {
   id: number;
-  payload: TUserCreateSchema;
+  payload: TUserUpdateSchema;
 }): Promise<AxiosResponse<TSuccess<TUser>>> {
-  return api.put(
+  return api.post(
     `${API_URL}/user-management/edit/${params.id}`,
     params.payload,
   );

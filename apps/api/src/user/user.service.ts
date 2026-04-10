@@ -53,10 +53,8 @@ export class UserService {
         email: updateUserDto.email,
         role: updateUserDto.role,
       })
+      .where(and(eq(user.id, id), isNull(user.deletedAt)))
       .returning();
-
-    if (updatedUser)
-      throw new InternalServerErrorException('User could not be created');
 
     return updatedUser;
   }

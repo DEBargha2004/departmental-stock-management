@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { TUserCreateSchema } from '@repo/contracts/user';
+import { TUserCreateSchema, TUserUpdateSchema } from '@repo/contracts/user';
 import { AuthService } from 'src/authentication/auth.service';
 import { UserService } from 'src/user/user.service';
 
@@ -29,7 +29,7 @@ export class UserManagementSevice {
     return user;
   }
 
-  async updateUser(userId: number, userDto: TUserCreateSchema) {
+  async updateUser(userId: number, userDto: TUserUpdateSchema) {
     const existingUser = await this.userService.getUserById(userId);
     if (!existingUser) throw new NotFoundException('User not found');
 
@@ -42,7 +42,6 @@ export class UserManagementSevice {
       email: userDto.email,
       role: userDto.role,
     });
-    await this.authService.updateCredentials(userId, userDto.password);
 
     return newUser;
   }

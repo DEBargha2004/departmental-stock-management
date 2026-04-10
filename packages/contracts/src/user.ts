@@ -9,8 +9,9 @@ export const userCreateSchema = z.object({
 });
 
 export const userUpdateSchema = z.object({
-  name: z.string(),
+  name: z.string().nonempty(),
   email: z.email(),
+  role: z.enum(ROLES),
 });
 
 export type TUserCreateSchema = z.infer<typeof userCreateSchema>;

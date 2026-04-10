@@ -17,6 +17,7 @@ export default function ControlledFormDialog<
   FormComponent,
   children,
   heading,
+  onClose,
 }: TFormProps<T> & {
   children: React.ReactNode;
   FormComponent: (formProps: TFormProps<T>) => React.ReactNode;
@@ -24,17 +25,22 @@ export default function ControlledFormDialog<
     title: string;
     description: string;
   };
+  onClose?: () => void;
 }) {
   const [isDialogOpen, setDialogOpen] = useState(false);
+
   const isSubmitSuccessful = form.formState.isSubmitSuccessful;
+  const isSubmitted = form.formState.isSubmitted;
 
   useEffect(() => {
-    setDialogOpen(false);
-    form.reset();
-  }, [isSubmitSuccessful]);
+    if (isSubmitSuccessful && isSubmitted) {
+      setDialogOpen(false);
+      onClose?.();
+    }
+  }, [isSubmitSuccessful, isSubmitted]);
 
   useEffect(() => {
-    if (isDialogOpen) form.reset();
+    if (!isDialogOpen) onClose?.();
   }, [isDialogOpen]);
 
   return (

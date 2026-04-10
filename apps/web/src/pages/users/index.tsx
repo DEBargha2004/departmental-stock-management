@@ -19,11 +19,20 @@ import {
 import { Search, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { getRoleObject, ROLES_FORMATTED } from "@repo/contracts/roles";
 import RoleBadge from "./_components/role-badge";
-import { userCreateSchema, type TUserCreateSchema } from "@repo/contracts/user";
+import {
+  userCreateSchema,
+  userUpdateSchema,
+  type TUserCreateSchema,
+  type TUserUpdateSchema,
+} from "@repo/contracts/user";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getDefaultUserCreateValues } from "@/constants/form-defaults/user-create";
-import { useCreateUserMutation } from "@/controllers/user/mutation";
+import { getDefaultUserCreateValues } from "@/constants/form-defaults/user";
+import {
+  useCreateUserMutation,
+  useDeleteUserMutation,
+  useUpdateUserMutation,
+} from "@/controllers/user/mutation";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { useGetAllUsersQuery } from "@/controllers/user/query";
@@ -41,8 +50,10 @@ import ControlledFormDialog from "@/components/custom/controlled-form-dialog";
 import CreateUserForm from "@/components/custom/forms/user-create";
 import { getUserRequest } from "@/controllers/user/api";
 import { useRef } from "react";
+import WarningDialog from "@/components/custom/warning-dialog";
+import UpdateUserForm from "@/components/custom/forms/user-update";
 
-const pageLimits = [5, 10, 20, 50];
+const pageLimits = [10, 20, 30, 40, 50];
 
 export default function UsersPage() {
   const [searchParams, setSearchParams] = useQueryStates({
@@ -56,9 +67,12 @@ export default function UsersPage() {
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
-  const form = useForm<TUserCreateSchema>({
+  const createForm = useForm<TUserCreateSchema>({
     resolver: zodResolver(userCreateSchema),
     defaultValues: getDefaultUserCreateValues(),
+  });
+  const updateForm = useForm<TUserUpdateSchema>({
+    resolver: zodResolver(userUpdateSchema),
   });
 
   const { data: usersList, isLoading } = useGetAllUsersQuery({
@@ -68,6 +82,8 @@ export default function UsersPage() {
     page: searchParams.page,
   });
   const { mutateAsync: createUser } = useCreateUserMutation();
+  const { mutateAsync: updateUser } = useUpdateUserMutation();
+  const { mutateAsync: deleteUser } = useDeleteUserMutation();
 
   const dataList = usersList?.data.data;
   const firstPage = 1;
@@ -79,11 +95,8 @@ export default function UsersPage() {
   const nextPage = Math.min(lastPage, searchParams.page + 1);
 
   const handleAddUser = async (data: TUserCreateSchema) => {
-    const [err, res] = await catchError(createUser(data));
-
-    if (err) return toast.error(err.message);
-    toast.success(res.data.message);
-    form.reset();
+    await catchError(createUser(data));
+    createForm.reset();
   };
 
   const handleEditUserButtonClick = async (userId: number) => {
@@ -95,7 +108,7 @@ export default function UsersPage() {
     if (btn) {
       activeUpdateUser.current = userId;
       btn.click();
-      form.reset({
+      updateForm.reset({
         email: data?.email ?? "",
         name: data?.name ?? "",
         role: data?.role ?? "student",
@@ -103,9 +116,19 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
-    // Handle delete user logic here
-    console.log("Delete user:", userId);
+  const handleUpdateUser = async (data: TUserUpdateSchema) => {
+    if (!activeUpdateUser.current) return;
+
+    await updateUser({
+      id: activeUpdateUser.current,
+      payload: data,
+    });
+
+    activeUpdateUser.current = null;
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    await deleteUser({ id: userId });
   };
 
   const handleViewUser = (userId: number) => {
@@ -126,13 +149,14 @@ export default function UsersPage() {
           </p>
         </div>
         <ControlledFormDialog
-          form={form}
+          form={createForm}
           onSubmit={handleAddUser}
           FormComponent={CreateUserForm}
           heading={{
             title: "Create User",
             description: "Create a new user account",
           }}
+          onClose={() => createForm.reset(getDefaultUserCreateValues())}
         >
           <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
             <Plus className="h-4 w-4" strokeWidth={2} />
@@ -140,22 +164,19 @@ export default function UsersPage() {
           </Button>
         </ControlledFormDialog>
         <ControlledFormDialog
-          form={form}
-          onSubmit={handleAddUser}
-          FormComponent={CreateUserForm}
+          form={updateForm}
+          onSubmit={handleUpdateUser}
+          FormComponent={UpdateUserForm}
           heading={{
-            title: "Create User",
-            description: "Create a new user account",
+            title: "Update User",
+            description: "Update user account",
           }}
         >
           <Button
             className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm"
             ref={updateEntryButtonRef}
             hidden
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            <span className="font-medium">Add User</span>
-          </Button>
+          ></Button>
         </ControlledFormDialog>
       </div>
 
@@ -269,14 +290,23 @@ export default function UsersPage() {
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteUser(user.id)}
+                      <WarningDialog
+                        id={user.id}
+                        handler={handleDeleteUser}
+                        heading={{
+                          title: "Delete User",
+                          description:
+                            "Are you sure wabt to delete this. This action is irreversible and can't be undone",
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                        </Button>
+                      </WarningDialog>
                     </div>
                   </TableCell>
                 </TableRow>
