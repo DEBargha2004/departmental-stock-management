@@ -7,64 +7,8 @@ import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { vendor } from 'src/database/schema';
 import { user } from 'src/user/user.schema';
-import type {
-  STATUS,
-  MOVEMENT_TYPE,
-  PO_STATUS,
-} from '@repo/contracts/inventory-status';
-
-// Inventory
-export const category = pgTable('category', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  name: text('name').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  deletedAt: timestamp('deleted_at'),
-});
-
-export const item = pgTable(
-  'item',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    name: text('name').notNull(),
-    imageUrl: text('image_url'),
-    categoryId: integer('category_id')
-      .notNull()
-      .references(() => category.id),
-
-    status: text('status').$type<STATUS>().notNull().default('DRAFT'),
-    minStockLevel: integer('min_stock_level'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    deletedAt: timestamp('deleted_at'),
-  },
-  (table) => [check('min_stock_level_check', sql`${table.minStockLevel} > 0`)],
-);
-
-// snapshot of stock
-export const stock = pgTable('stock', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  itemId: integer('item_id')
-    .notNull()
-    .references(() => item.id),
-
-  // need to add more cols
-  quantityAvailable: integer('quantity_available').notNull().default(0),
-  quantityIssued: integer('quantity_issued').notNull().default(0),
-  quantityDamaged: integer('quantity_damaged').notNull().default(0),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
-
-// stocky movement history
-export const stockMovement = pgTable('stock_movement', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  itemId: integer('item_id')
-    .notNull()
-    .references(() => item.id),
-
-  movementType: text('movement_type').$type<MOVEMENT_TYPE>().notNull(),
-  quantity: integer('quantity').notNull(),
-  reference: text('reference'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+import type { PO_STATUS } from '@repo/contracts/status';
+import { item } from './item.schema';
 
 // stock procurement detail
 export const purchaseOrder = pgTable('purchase_order', {
@@ -92,16 +36,6 @@ export const purchaseOrderItems = pgTable('purchase_order_items', {
 
   quantity: integer('quantity').notNull(),
   unitPrice: integer('unit_price').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-});
-
-export const stockBatch = pgTable('stock_batch', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  purchaseOrderItemId: integer('purchase_order_item_id')
-    .notNull()
-    .references(() => purchaseOrderItems.id),
-
-  quantityReceived: integer('quantity_received').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -146,3 +80,7 @@ export const returnItem = pgTable(
     ),
   ],
 );
+
+export * from './category.schema';
+export * from './item.schema';
+export * from './stock.schema';

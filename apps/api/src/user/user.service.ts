@@ -10,6 +10,7 @@ import { user } from './user.schema';
 import { TUserCreateSchema } from '@repo/contracts/user';
 import { type Role } from '@repo/contracts/roles';
 import { TUserInfo } from './user.utils';
+import type { TUserQuery } from '@repo/contracts/query';
 
 @Injectable()
 export class UserService {
@@ -69,23 +70,16 @@ export class UserService {
     return deletedUser;
   }
 
-  async getUsers({
-    query,
-    role,
-    limit = 20,
-    page = 1,
-  }: {
-    query?: string;
-    role?: Role;
-    limit: number;
-    page: number;
-  }) {
+  async getUsers({ query, role, limit = 20, page = 1, status }: TUserQuery) {
     const baseQuery = this.db
       .select()
       .from(user)
       .where(
         and(
           isNull(user.deletedAt),
+          ...(status
+            ? [eq(user.isActive, status === 'active' ? true : false)]
+            : []),
           ...(query
             ? [
                 or(
@@ -117,12 +111,14 @@ export class UserService {
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const [users, [totalRes]] = await Promise.all([
+    const countQuery = this.db.select({ count: count() }).from(baseQuery);
+
+    const [users, [{ count: totalCount }]] = await Promise.all([
       selectQuery,
-      this.db.select({ count: count() }).from(baseQuery),
+      countQuery,
     ]);
 
-    return { users, count: totalRes.count };
+    return { users, count: totalCount };
   }
 
   async getAdmin() {

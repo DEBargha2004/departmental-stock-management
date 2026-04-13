@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { UserManagementSevice } from './user-management.service';
@@ -33,7 +34,7 @@ export class UserManagementController {
   }
 
   @Auth('user.update')
-  @Post('edit/:id')
+  @Patch(':id')
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(userUpdateSchema)) payload: TUserUpdateSchema,

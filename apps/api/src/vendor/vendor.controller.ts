@@ -1,48 +1,78 @@
-import { Body, Controller, ParseIntPipe, Post } from '@nestjs/common';
-import { filter, type TFilter } from '@repo/contracts/filter';
 import {
-  type TVendor,
-  type TVendorUpdate,
-  vendorSchema,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  type TVendorCreateSchema,
+  type TVendorUpdateSchema,
+  vendorCreateSchema,
   vendorUpdateSchema,
 } from '@repo/contracts/vendor';
 import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
 import { VendorService } from './vendor.service';
 import { ResponseBuilder } from 'src/lib/response';
+import { Auth } from 'src/authentication/auth.guard';
+import type { Status } from '@repo/contracts/status';
 
 @Controller('vendor')
 export class VendorController {
   constructor(private vendorService: VendorService) {}
 
+  @Auth('vendor.create')
   @Post('create')
   async createVendor(
-    @Body(new ZodValidationPipe(vendorSchema)) payload: TVendor,
+    @Body(new ZodValidationPipe(vendorCreateSchema))
+    payload: TVendorCreateSchema,
   ) {
     const res = await this.vendorService.createVendor(payload);
     return ResponseBuilder.success(res, 'Vendor created successfully');
   }
 
+  @Auth('vendor.update')
+  @Patch(':id')
   async updateVendor(
-    @Body(new ZodValidationPipe(vendorUpdateSchema)) payload: TVendorUpdate,
+    @Param('id', ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(vendorUpdateSchema))
+    payload: TVendorUpdateSchema,
   ) {
-    const res = await this.vendorService.updateVendor(payload.id, payload.data);
+    const res = await this.vendorService.updateVendor(id, payload);
     return ResponseBuilder.success(res, 'Vendor updated successfully');
   }
 
-  async deleteVendor(@Body('id', ParseIntPipe) id: number) {
+  @Auth('vendor.delete')
+  @Delete(':id')
+  async deleteVendor(@Param('id', ParseIntPipe) id: number) {
     await this.vendorService.deleteVendor(id);
     return ResponseBuilder.success(null, 'Vendor deleted successfully');
   }
 
-  async getVendor(@Body('id', ParseIntPipe) id: number) {
-    const res = await this.vendorService.getVendor(id);
-    return res;
+  @Auth('vendor.read')
+  @Get('list')
+  async getVendors(
+    @Query('query') query: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('status') status?: Status,
+  ) {
+    const res = await this.vendorService.getVendors({
+      query,
+      limit,
+      page,
+      status,
+    });
+
+    return ResponseBuilder.success(res, 'Vendors fetched successfully');
   }
 
-  async getVendors(
-    @Body('filter', new ZodValidationPipe(filter)) filter: TFilter,
-  ) {
-    const res = await this.vendorService.getVendors(filter);
-    return res;
+  async getVendor(@Body('id', ParseIntPipe) id: number) {
+    const res = await this.vendorService.getVendor(id);
+    return ResponseBuilder.success(res, 'Vendor fetched successfully');
   }
 }

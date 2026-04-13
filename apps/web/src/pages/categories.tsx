@@ -15,105 +15,135 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Edit, Eye, Plus, Search, Trash2 } from "lucide-react";
 import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { useState } from "react";
+  categoryCreateSchema,
+  categoryUpdateSchema,
+  type TCategoryCreateSchema,
+  type TCategoryUpdateSchema,
+} from "@repo/contracts/category";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { getDefaultCategoryCreateValues } from "@/constants/form-defaults/category";
+import {
+  useCreateCategoryMutation,
+  useDeleteCategoryMutation,
+  useUpdateCategoryMutation,
+} from "@/controllers/category/mutation";
+import { useGetAllCategoriesQuery } from "@/controllers/category/query";
+import { catchError } from "@/lib/catch-error";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Skeleton } from "@/components/ui/skeleton";
+import ControlledFormDialog from "@/components/custom/controlled-form-dialog";
+import CreateCategoryForm from "@/components/custom/forms/category-create";
+import WarningDialog from "@/components/custom/warning-dialog";
+import { getCategoryRequest } from "@/controllers/category/api";
+import { useRef } from "react";
+import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { STATUS_FORMATTED, type Status } from "@repo/contracts/status";
+import ActiveBadge from "@/components/custom/active-badge";
 
-// Mock category data
-const mockCategories = [
-  {
-    id: "1",
-    name: "Electronics",
-    description: "Computers, laptops, monitors, and related accessories.",
-    itemsCount: 450,
-    status: "Active",
-    lastUpdated: "2024-03-12",
-  },
-  {
-    id: "2",
-    name: "Furniture",
-    description: "Office chairs, desks, filing cabinets, and tables.",
-    itemsCount: 320,
-    status: "Active",
-    lastUpdated: "2024-03-10",
-  },
-  {
-    id: "3",
-    name: "Stationery",
-    description: "Pens, notebooks, printer paper, and general supplies.",
-    itemsCount: 850,
-    status: "Active",
-    lastUpdated: "2024-03-14",
-  },
-  {
-    id: "4",
-    name: "Accessories",
-    description: "Mice, keyboards, adapters, and cables.",
-    itemsCount: 230,
-    status: "Active",
-    lastUpdated: "2024-03-13",
-  },
-  {
-    id: "5",
-    name: "Legacy Hardware",
-    description: "Outdated hardware preserved for compatibility or archives.",
-    itemsCount: 45,
-    status: "Inactive",
-    lastUpdated: "2023-11-20",
-  },
-];
-
-const pageLimits = [5, 10, 20, 50];
-const statuses = ["Active", "Inactive"];
+const pageLimits = [10, 20, 30, 40, 50];
 
 export default function CategoriesPage() {
-  const [categories] = useState(mockCategories);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Filter categories based on search and filters
-  const filteredCategories = categories.filter((category) => {
-    const matchesSearch =
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || category.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesStatus;
+  const [searchParams, setSearchParams] = useQueryStates({
+    query: parseAsString.withDefault(""),
+    limit: parseAsInteger.withDefault(20),
+    status: parseAsString.withDefault("all"),
+    page: parseAsInteger.withDefault(1),
   });
 
-  // Calculate pagination
-  const maxPage = Math.max(1, Math.ceil(filteredCategories.length / pageSize));
-  const safePage = Math.min(currentPage, maxPage);
-  const paginatedCategories = filteredCategories.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
+  const debouncedQuery = useDebounce(searchParams.query, 500);
+
+  const createForm = useForm<TCategoryCreateSchema>({
+    resolver: zodResolver(categoryCreateSchema),
+    defaultValues: getDefaultCategoryCreateValues(),
+  });
+
+  const updateForm = useForm<TCategoryUpdateSchema>({
+    resolver: zodResolver(categoryUpdateSchema),
+  });
+
+  const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
+  const activeUpdateCategory = useRef<number | null>(null);
+
+  const { data: categoryList, isLoading } = useGetAllCategoriesQuery({
+    query: debouncedQuery,
+    status:
+      searchParams.status === "all" ? null : (searchParams.status as Status),
+    limit: searchParams.limit,
+    page: searchParams.page,
+  });
+
+  const { mutateAsync: createCategory } = useCreateCategoryMutation();
+  const { mutateAsync: updateCategory } = useUpdateCategoryMutation();
+  const { mutateAsync: deleteCategory } = useDeleteCategoryMutation();
+
+  const dataList = categoryList?.data.data;
+  const firstPage = 1;
+  const lastPage = Math.max(
+    1,
+    Math.ceil((dataList?.count ?? 0) / searchParams.limit),
   );
+  const prevPage = Math.max(firstPage, searchParams.page - 1);
+  const nextPage = Math.min(lastPage, searchParams.page + 1);
 
-  type Category = (typeof mockCategories)[0];
+  const recordStart = dataList
+    ? dataList.list.length > 0
+      ? (searchParams.page - 1) * searchParams.limit + 1
+      : 0
+    : 0;
+  const recordEnd = dataList
+    ? Math.min(searchParams.page * searchParams.limit, dataList.count)
+    : 0;
 
-  const handleAddCategory = () => {
-    console.log("Add category");
+  const handleAddCategory = async (data: TCategoryCreateSchema) => {
+    await catchError(createCategory(data));
+    createForm.reset();
   };
 
-  const handleEditCategory = (category: Category) => {
-    console.log("Edit category:", category);
+  const handleEditCategory = async (categoryId: number) => {
+    const [err, res] = await catchError(getCategoryRequest({ id: categoryId }));
+    if (err) return toast.error(err.message);
+
+    const btn = updateEntryButtonRef.current;
+    const { data } = res.data;
+    if (btn) {
+      activeUpdateCategory.current = categoryId;
+      btn.click();
+      updateForm.reset({
+        name: data?.name ?? "",
+        description: data?.description ?? "",
+      });
+    }
   };
 
-  const handleDeleteCategory = (category: Category) => {
-    console.log("Delete category:", category);
+  const handleUpdateCategory = async (data: TCategoryUpdateSchema) => {
+    if (!activeUpdateCategory.current) return;
+
+    await updateCategory({
+      id: activeUpdateCategory.current,
+      payload: data,
+    });
+
+    activeUpdateCategory.current = null;
   };
 
-  const handleViewCategory = (category: Category) => {
-    console.log("View category:", category);
+  const handleDeleteCategory = async (categoryId: number) => {
+    await catchError(deleteCategory({ id: categoryId }));
+  };
+
+  const handleViewCategory = (categoryId: number) => {
+    console.log("View category:", categoryId);
   };
 
   return (
@@ -128,13 +158,33 @@ export default function CategoriesPage() {
             Organize and classify inventory into manageable categories.
           </p>
         </div>
-        <Button
-          onClick={handleAddCategory}
-          className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm"
+        <ControlledFormDialog
+          form={createForm}
+          onSubmit={handleAddCategory}
+          FormComponent={CreateCategoryForm}
+          heading={{
+            title: "Create Category",
+            description:
+              "Organize and classify inventory into manageable categories.",
+          }}
+          onClose={() => createForm.reset(getDefaultCategoryCreateValues())}
         >
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          <span className="font-medium">Add Category</span>
-        </Button>
+          <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            <span className="font-medium">Add Category</span>
+          </Button>
+        </ControlledFormDialog>
+        <ControlledFormDialog
+          form={updateForm}
+          onSubmit={handleUpdateCategory}
+          FormComponent={CreateCategoryForm}
+          heading={{
+            title: "Update Category",
+            description: "Update existing inventory category details.",
+          }}
+        >
+          <Button className="hidden" ref={updateEntryButtonRef} />
+        </ControlledFormDialog>
       </div>
 
       {/* Filters Toolbar */}
@@ -147,21 +197,28 @@ export default function CategoriesPage() {
           <Input
             placeholder="Search categories..."
             className="pl-9 h-9 w-full bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchParams.query}
+            onChange={(e) =>
+              setSearchParams({ ...searchParams, query: e.target.value })
+            }
           />
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={searchParams.status}
+            onValueChange={(e) =>
+              setSearchParams({ ...searchParams, status: e })
+            }
+          >
             <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="all">All Status</SelectItem>
-              {statuses.map((status) => (
-                <SelectItem key={status} value={status.toLowerCase()}>
-                  {status}
+              {STATUS_FORMATTED.map((status) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -186,17 +243,42 @@ export default function CategoriesPage() {
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Status
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Last Updated
-              </TableHead>
+
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedCategories.length > 0 ? (
-              paginatedCategories.map((category) => (
+            {isLoading ? (
+              Array.from({ length: searchParams.limit }).map((_, index) => (
+                <TableRow key={index} className="border-input/40">
+                  <TableCell className="py-3">
+                    <Skeleton className="h-5 w-32" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-5 w-48" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-6 w-16" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell className="py-3 text-sm text-muted-foreground">
+                    <Skeleton className="h-5 w-24" />
+                  </TableCell>
+                  <TableCell className="py-3 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8" />
+                      <Skeleton className="h-8 w-8" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (dataList?.list.length ?? 0) > 0 ? (
+              dataList?.list.map((category) => (
                 <TableRow
                   key={category.id}
                   className="group hover:bg-muted/40 transition-colors border-input/40"
@@ -205,27 +287,13 @@ export default function CategoriesPage() {
                     {category.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-muted-foreground max-w-xs truncate">
-                    {category.description}
+                    {category.description || "-"}
                   </TableCell>
                   <TableCell className="py-3 text-sm">
                     {category.itemsCount}
                   </TableCell>
                   <TableCell className="py-3">
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          category.status === "Active"
-                            ? "bg-emerald-500"
-                            : "bg-neutral-400"
-                        }`}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {category.status}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    {category.lastUpdated}
+                    <ActiveBadge isActive={category.isActive} />
                   </TableCell>
                   <TableCell className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
@@ -233,7 +301,7 @@ export default function CategoriesPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleViewCategory(category)}
+                        onClick={() => handleViewCategory(category.id)}
                       >
                         <Eye className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
@@ -241,18 +309,27 @@ export default function CategoriesPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditCategory(category)}
+                        onClick={() => handleEditCategory(category.id)}
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteCategory(category)}
+                      <WarningDialog
+                        id={category.id}
+                        handler={handleDeleteCategory}
+                        heading={{
+                          title: "Delete Category",
+                          description:
+                            "Are you sure you want to delete this category? This action is irreversible.",
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                        </Button>
+                      </WarningDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -277,17 +354,15 @@ export default function CategoriesPage() {
         </Table>
       </div>
 
-      {/* Pagination & Page Limit Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground py-2 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="font-medium text-muted-foreground/80">
             Rows per page
           </span>
           <Select
-            value={pageSize.toString()}
+            value={searchParams.limit.toString()}
             onValueChange={(val) => {
-              setPageSize(Number(val));
-              setCurrentPage(1);
+              setSearchParams({ ...searchParams, limit: Number(val), page: 1 });
             }}
           >
             <SelectTrigger className="h-7 w-fit gap-1.5 bg-transparent border-0 shadow-none focus:ring-0 text-foreground font-medium p-1 px-2 hover:bg-muted/50 rounded transition-colors">
@@ -303,36 +378,34 @@ export default function CategoriesPage() {
           </Select>
           <div className="h-4 w-px bg-input/40 mx-2" />
           <span className="font-medium">
-            {filteredCategories.length === 0
-              ? 0
-              : (safePage - 1) * pageSize + 1}
-            –{Math.min(safePage * pageSize, filteredCategories.length)} of{" "}
-            {filteredCategories.length}
+            {recordStart}-{recordEnd} of {dataList?.count ?? 0}
           </span>
         </div>
 
         <div className="flex items-center gap-1 border border-input/40 rounded-lg p-0.5 bg-card shadow-sm">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-md bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-            disabled={safePage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" strokeWidth={2} />
-          </Button>
-          <div className="flex items-center justify-center min-w-[2.5rem] font-medium text-foreground tabular-nums">
-            {safePage} / {maxPage}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-md bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-            disabled={safePage === maxPage}
-            onClick={() => setCurrentPage((p) => Math.min(maxPage, p + 1))}
-          >
-            <ChevronRight className="h-4 w-4" strokeWidth={2} />
-          </Button>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setSearchParams({ ...searchParams, page: prevPage })
+                  }
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink>{searchParams.page}</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setSearchParams({ ...searchParams, page: nextPage })
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </div>
     </div>

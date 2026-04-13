@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { Auth } from 'src/authentication/auth.guard';
 import { UserService } from './user.service';
 import { ResponseBuilder } from 'src/lib/response';
@@ -6,6 +13,7 @@ import { CurrentUser } from './user.decorator';
 import type { TJWTPayload } from 'src/authentication/auth.service';
 import { buildUserObject } from './user.utils';
 import type { Role } from '@repo/contracts/roles';
+import type { Status } from '@repo/contracts/status';
 
 @Controller('user')
 export class UserController {
@@ -23,9 +31,16 @@ export class UserController {
     @Query('query') query: string,
     @Query('limit', ParseIntPipe) limit: number,
     @Query('page', ParseIntPipe) page: number,
+    @Query('status') status?: Status,
     @Query('role') role?: Role,
   ) {
-    const res = await this.userService.getUsers({ query, role, limit, page });
+    const res = await this.userService.getUsers({
+      query,
+      role,
+      limit,
+      page,
+      status,
+    });
 
     return ResponseBuilder.success({
       list: res.users.map(buildUserObject),

@@ -5,16 +5,24 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
-import { type TVendor } from '@repo/contracts/vendor';
+import {
+  type TVendorCreateSchema,
+  type TVendorUpdateSchema,
+} from '@repo/contracts/vendor';
 import { vendor } from './vendor.schema';
-import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import type { TFilter } from '@repo/contracts/filter';
+import { TQuery, TVendorQuery } from '@repo/contracts/query';
+import { InventoryService } from 'src/inventory/inventory.service';
 
 @Injectable()
 export class VendorService {
-  constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
+  constructor(
+    @Inject(DATABASE_MODULE) private db: TDB,
+    private inventoryService: InventoryService,
+  ) {}
 
-  async createVendor(payload: TVendor) {
+  async createVendor(payload: TVendorCreateSchema) {
     const [res] = await this.db
       .insert(vendor)
       .values({
@@ -31,7 +39,7 @@ export class VendorService {
     return res;
   }
 
-  async updateVendor(id: number, payload: TVendor) {
+  async updateVendor(id: number, payload: TVendorUpdateSchema) {
     const [res] = await this.db
       .update(vendor)
       .set({
@@ -71,15 +79,20 @@ export class VendorService {
 
     if (!res) throw new NotFoundException('Vendor not found');
 
-    return res;
+    const lastOrderInfo = await this.inventoryService.getLastOrderOfVendor([
+      res.id,
+    ]);
+
+    return {
+      ...res,
+      lastOrderDate: lastOrderInfo.length
+        ? lastOrderInfo[0].lastOrderDate
+        : null,
+    };
   }
 
-  async getVendors(filter?: TFilter) {
-    const limit = filter?.limit ?? 30;
-    const offset = filter?.offset ?? 0;
-    const query = filter?.query ?? '';
-
-    const res = await this.db
+  async getVendors({ query, limit = 20, page = 1, status }: TVendorQuery) {
+    const baseQuery = this.db
       .select({
         id: vendor.id,
         name: vendor.name,
@@ -87,33 +100,66 @@ export class VendorService {
         phone: vendor.phone,
         email: vendor.email,
         address: vendor.address,
+        isActive: vendor.isActive,
       })
       .from(vendor)
       .where(
         and(
           isNull(vendor.deletedAt),
+          ...(status
+            ? [eq(vendor.isActive, status === 'active' ? true : false)]
+            : []),
           ...(query
             ? [
                 or(
                   gte(sql`SIMILARITY(${vendor.name}, ${query})`, 0.3),
                   gte(sql`SIMILARITY(${vendor.phone}, ${query})`, 0.3),
+                  gte(sql`SIMILARITY(${vendor.email}, ${query})`, 0.3),
                 ),
               ]
             : []),
         ),
       )
-      .offset(offset)
-      .limit(limit)
       .orderBy(
         desc(
           query
             ? sql`GREATEST(
-              SIMILARITY(${vendor.name}, ${query}),
-              SIMILARITY(${vendor.phone}, ${query})`
+                SIMILARITY(${vendor.name}, ${query}),
+                SIMILARITY(${vendor.phone}, ${query}),
+                SIMILARITY(${vendor.email}, ${query})
+              )`
             : vendor.createdAt,
         ),
-      );
+      )
+      .as('base_query');
 
-    return res;
+    const selectQuery = this.db
+      .select()
+      .from(baseQuery)
+      .limit(limit)
+      .offset((page - 1) * limit);
+    const countQuery = this.db
+      .select({ count: count().as('count') })
+      .from(baseQuery);
+
+    let [list, [{ count: totalCount }]] = await Promise.all([
+      selectQuery,
+      countQuery,
+    ]);
+
+    const lastOrderInfos = await this.inventoryService.getLastOrderOfVendor(
+      list.map((i) => i.id),
+    );
+
+    const listWithOrderDate = list.map((v) => {
+      const lastOrder = lastOrderInfos.find((lo) => lo.vendorId === v.id);
+
+      return {
+        ...v,
+        lastOrderDate: lastOrder ? lastOrder.lastOrderDate : null,
+      };
+    });
+
+    return { list: listWithOrderDate, count: totalCount };
   }
 }

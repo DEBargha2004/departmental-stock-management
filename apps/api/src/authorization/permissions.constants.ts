@@ -17,6 +17,11 @@ export const PERMISSIONS = {
   AUTH_CREATE: 'auth.create',
   AUTH_UPDATE: 'auth.update',
   AUTH_DELETE: 'auth.delete',
+
+  CATEGORY_CREATE: 'category.create',
+  CATEGORY_READ: 'category.read',
+  CATEGORY_UPDATE: 'category.update',
+  CATEGORY_DELETE: 'category.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

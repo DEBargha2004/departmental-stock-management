@@ -8,12 +8,14 @@ import type {
   TUserUpdateSchema,
 } from "@repo/contracts/user";
 import type { AxiosResponse } from "axios";
+import type { TUserQuery } from "@repo/contracts/query";
 
 type TUser = {
   id: number;
   name: string;
   email: string;
   role: Role;
+  isActive: boolean;
 };
 
 export async function createUserRequest(
@@ -26,10 +28,7 @@ export async function updateUserRequest(params: {
   id: number;
   payload: TUserUpdateSchema;
 }): Promise<AxiosResponse<TSuccess<TUser>>> {
-  return api.post(
-    `${API_URL}/user-management/edit/${params.id}`,
-    params.payload,
-  );
+  return api.patch(`${API_URL}/user-management/${params.id}`, params.payload);
 }
 
 export async function deleteUserRequest(params: {
@@ -44,13 +43,22 @@ export async function getUserRequest(params: {
   return api.get(`${API_URL}/user/${params.id}`);
 }
 
-export async function getAllUsersRequest(
-  query: string,
-  role: string,
-  limit: number,
-  page: number,
-): Promise<AxiosResponse<TSuccess<PaginatedListResponse<TUser[]>>>> {
+export async function getAllUsersRequest({
+  query = "",
+  role,
+  status,
+  limit,
+  page,
+}: TUserQuery): Promise<
+  AxiosResponse<TSuccess<PaginatedListResponse<TUser[]>>>
+> {
   return api.get(
-    `${API_URL}/user/list?query=${query}&role=${role}&limit=${limit}&page=${page}`,
+    `${API_URL}/user/list?${new URLSearchParams({
+      query,
+      ...(role && { role }),
+      ...(status && { status }),
+      limit: limit.toString(),
+      page: page.toString(),
+    }).toString()}`,
   );
 }

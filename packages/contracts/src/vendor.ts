@@ -1,17 +1,14 @@
 import z from "zod";
 
-export const vendorSchema = z.object({
+export const vendorCreateSchema = z.object({
   name: z.string().min(1, "Vendor name is required"),
-  contactPerson: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.email("Invalid email address").optional(),
+  contactPerson: z.string().min(1, "Contact person is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  email: z.email("Invalid email address").optional().or(z.literal("")),
   address: z.string().optional(),
 });
 
-export const vendorUpdateSchema = z.object({
-  id: z.coerce.number<number>(),
-  data: vendorSchema,
-});
+export const vendorUpdateSchema = vendorCreateSchema;
 
-export type TVendor = z.infer<typeof vendorSchema>;
-export type TVendorUpdate = z.infer<typeof vendorUpdateSchema>;
+export type TVendorCreateSchema = z.infer<typeof vendorCreateSchema>;
+export type TVendorUpdateSchema = z.infer<typeof vendorUpdateSchema>;

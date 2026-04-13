@@ -8,6 +8,34 @@
       "when": 1775670613735,
       "tag": "0000_lying_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776013790426,
+      "tag": "0001_shallow_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776023564249,
+      "tag": "0002_colossal_squirrel_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776091133222,
+      "tag": "0003_early_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776099064145,
+      "tag": "0004_glamorous_franklin_richards",
+      "breakpoints": true
     }
   ]
 }

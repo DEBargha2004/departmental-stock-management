@@ -30,7 +30,7 @@ export default function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {sidebarItems.map((si) => (
-                <SidebarMenuItem key={si.id}>
+                <SidebarMenuItem key={si.id} title={si.label}>
                   <SidebarMenuButton
                     asChild
                     isActive={si.isActive(location.pathname)}

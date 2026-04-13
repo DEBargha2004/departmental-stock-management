@@ -1,16 +1,13 @@
-import { Role } from '@repo/contracts/roles';
 import { text } from 'drizzle-orm/pg-core';
 import { boolean } from 'drizzle-orm/pg-core';
-import { jsonb } from 'drizzle-orm/pg-core';
 import { timestamp } from 'drizzle-orm/pg-core';
 import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 
-export const user = pgTable('user', {
+export const category = pgTable('category', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: text('name').notNull(),
-  email: text('email').notNull(),
-  role: jsonb('role').$type<Role>().notNull(),
+  description: text('description'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
