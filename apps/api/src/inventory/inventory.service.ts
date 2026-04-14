@@ -1,103 +1,92 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
-import type { TCategoryCreateSchema } from '@repo/contracts/category';
-import type { TItemCreateSchema } from '@repo/contracts/item';
-import { and, desc, eq, gte, inArray, isNull, max, or, sql } from 'drizzle-orm';
-import { item } from './item.schema';
-import { stock } from './stock.schema';
+import type {
+  TProductCreateSchema,
+  TProductUpdateSchema,
+} from '@repo/contracts/item';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  max,
+  or,
+  sql,
+} from 'drizzle-orm';
+import { product } from './product.schema';
 import { category } from './category.schema';
-import { TQuery } from 'src/global/types/query';
-import { Status } from '@repo/contracts/status';
-import { purchaseOrder } from './inventory.schema';
+import { purchaseOrder, stock } from './inventory.schema';
+import { TProductQuery } from '@repo/contracts/query';
+import { CategoryService } from './category.service';
+import { ProductService } from './product.service';
+import { StockService } from './stock.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
+  constructor(
+    @Inject(DATABASE_MODULE) private db: TDB,
+    private categoryService: CategoryService,
+    private productService: ProductService,
+    private stockService: StockService,
+  ) {}
 
-  async createItem(itemDto: TItemCreateSchema) {
-    return await this.db.transaction(async (trx) => {
-      const [res] = await this.db
-        .insert(item)
-        .values({
-          name: itemDto.name,
-          categoryId: itemDto.categoryId,
-          minStockLevel: itemDto.minStockLevel,
-          imageUrl: itemDto.imageUrl,
-        })
-        .returning();
+  async createItem(itemDto: TProductCreateSchema) {
+    const category = await this.categoryService.getCategory(itemDto.categoryId);
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
 
-      await this.db.insert(stock).values({
-        itemId: res.id,
-      });
-
-      return res;
+    const product = await this.productService.createProduct(itemDto);
+    const stockEntry = await this.stockService.createNewStockEntry({
+      productId: product.id,
+      quantity: itemDto.currentStock,
+      minQuantity: itemDto.minStockLevel,
     });
+
+    return { product, stock: stockEntry };
   }
+
   async getItem(id: number) {
-    const [it] = await this.db
-      .select()
-      .from(item)
-      .where(and(isNull(item.deletedAt), eq(item.id, id)));
+    const it = await this.productService.getProduct(id);
+
+    if (!it) throw new NotFoundException('Item not found');
 
     return it;
   }
 
-  async getItems({
-    query,
-    limit,
-    page,
-    status,
-  }: TQuery & {
-    status: Status;
-  }) {
-    const items = await this.db
-      .select()
-      .from(item)
-      .leftJoin(category, eq(item.categoryId, category.id))
-      .where(
-        and(
-          isNull(item.deletedAt),
-          eq(item.isActive, status === 'active' ? true : false),
-          ...(query && [
-            or(
-              gte(sql`SIMILARITY(${item.name}, ${query})`, 0.3),
-              gte(sql`SIMILARITY(${category.name}, ${query})`, 0.3),
-            ),
-          ]),
-        ),
-      )
-      .orderBy(
-        query
-          ? desc(sql`GREATEST(
-                SIMILARITY(${item.name}, ${query}),
-                SIMILARITY(${category.name}, ${query})
-             
-            )`)
-          : desc(item.createdAt),
-      )
-      .limit(30);
+  async getItems(query: TProductQuery) {
+    const { list, count } = await this.productService.getProducts(query);
 
-    return items;
+    return { list, count };
   }
 
-  async updateItem(id: number, itemDto: TItemCreateSchema) {
-    const existing = await this.getItem(id);
-    if (!existing) throw new NotFoundException('Item Not found');
+  async updateItem(id: number, itemDto: TProductUpdateSchema) {
+    const [existingProduct, existingcategory, stockDetails] = await Promise.all(
+      [
+        this.productService.getProduct(id),
+        this.categoryService.getCategory(itemDto.categoryId),
+        this.stockService.getStockDetails(id),
+      ],
+    );
 
-    const [it] = await this.db
-      .update(item)
-      .set(itemDto)
-      .where(eq(item.id, id))
-      .returning();
+    if (!existingProduct) throw new NotFoundException('Item Not found');
+    if (!existingcategory) throw new NotFoundException('Category not found');
+    if (!stockDetails) throw new NotFoundException('Stock details not found');
 
-    return it;
+    const item = await this.productService.updateProduct(id, itemDto);
+    await this.stockService.updateStockMetadata(id, {
+      minQuantity: itemDto.minStockLevel,
+    });
+
+    return item;
   }
 
   async deleteItem(id: number) {
-    await this.db
-      .update(item)
-      .set({ deletedAt: new Date() })
-      .where(eq(item.id, id));
+    await this.productService.deleteProduct(id);
+    await this.stockService.deleteStockEntry(id);
   }
 
   async getLastOrderOfVendor(vendorIds: number[]) {

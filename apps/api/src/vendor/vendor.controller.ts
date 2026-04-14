@@ -19,7 +19,7 @@ import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
 import { VendorService } from './vendor.service';
 import { ResponseBuilder } from 'src/lib/response';
 import { Auth } from 'src/authentication/auth.guard';
-import type { Status } from '@repo/contracts/status';
+import type { STATUS } from '@repo/contracts/status';
 
 @Controller('vendor')
 export class VendorController {
@@ -59,7 +59,7 @@ export class VendorController {
     @Query('query') query: string,
     @Query('limit', ParseIntPipe) limit: number,
     @Query('page', ParseIntPipe) page: number,
-    @Query('status') status?: Status,
+    @Query('status') status?: STATUS,
   ) {
     const res = await this.vendorService.getVendors({
       query,

@@ -13,7 +13,7 @@ import { CurrentUser } from './user.decorator';
 import type { TJWTPayload } from 'src/authentication/auth.service';
 import { buildUserObject } from './user.utils';
 import type { Role } from '@repo/contracts/roles';
-import type { Status } from '@repo/contracts/status';
+import type { STATUS } from '@repo/contracts/status';
 
 @Controller('user')
 export class UserController {
@@ -31,7 +31,7 @@ export class UserController {
     @Query('query') query: string,
     @Query('limit', ParseIntPipe) limit: number,
     @Query('page', ParseIntPipe) page: number,
-    @Query('status') status?: Status,
+    @Query('status') status?: STATUS,
     @Query('role') role?: Role,
   ) {
     const res = await this.userService.getUsers({

@@ -1,0 +1,176 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import {
+  TProductUpdateSchema,
+  type TProductCreateSchema,
+} from '@repo/contracts/item';
+import { TProductQuery } from '@repo/contracts/query';
+import { product } from './product.schema';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gt,
+  gte,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
+import { category } from './category.schema';
+import { stock } from './inventory.schema';
+
+@Injectable()
+export class ProductService {
+  constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
+
+  async createProduct(payload: TProductCreateSchema) {
+    const [pr] = await this.db
+      .insert(product)
+      .values({
+        name: payload.name,
+        categoryId: payload.categoryId,
+        imageUrl: payload.imageUrl,
+        price: payload.price,
+      })
+      .returning();
+
+    return pr;
+  }
+
+  async updateProduct(id: number, payload: TProductUpdateSchema) {
+    const [pr] = await this.db
+      .update(product)
+      .set({
+        name: payload.name,
+        categoryId: payload.categoryId,
+        imageUrl: payload.imageUrl,
+        price: payload.price,
+      })
+      .where(eq(product.id, id))
+      .returning();
+
+    return pr;
+  }
+
+  async getProduct(id: number) {
+    const [pr] = await this.db
+      .select({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        imageUrl: product.imageUrl,
+        price: product.price,
+        category: {
+          id: category.id,
+          name: category.name,
+          description: category.description,
+        },
+        stock: {
+          quantity: stock.quantityAvailable,
+          minStockLevel: stock.minStockLevel,
+        },
+      })
+      .from(product)
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .leftJoin(stock, eq(stock.productId, product.id))
+      .where(
+        and(
+          isNull(product.deletedAt),
+          isNull(category.deletedAt),
+          eq(product.id, id),
+        ),
+      );
+
+    return pr;
+  }
+
+  async getProducts({
+    query = '',
+    limit = 20,
+    page = 1,
+    category: cat,
+    status,
+  }: TProductQuery) {
+    const baseQuery = this.db
+      .select({
+        product: {
+          id: product.id,
+          name: product.name,
+        },
+        category: {
+          id: category.id,
+          name: category.name,
+        },
+        quantity: stock.quantityAvailable,
+        minStockLevel: stock.minStockLevel,
+        price: product.price,
+      })
+      .from(product)
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .leftJoin(stock, eq(stock.productId, product.id))
+      .where(
+        and(
+          isNull(product.deletedAt),
+          isNull(category.deletedAt),
+          ...(cat != null ? [eq(category.id, cat)] : []),
+          ...(status === 'in_stock'
+            ? [gt(stock.quantityAvailable, stock.minStockLevel)]
+            : []),
+          ...(status === 'low_stock'
+            ? [
+                and(
+                  gt(stock.quantityAvailable, 0),
+                  lte(stock.quantityAvailable, stock.minStockLevel),
+                ),
+              ]
+            : []),
+          ...(status === 'out_of_stock'
+            ? [eq(stock.quantityAvailable, 0)]
+            : []),
+          ...(query
+            ? [
+                or(
+                  gte(sql`SIMILARITY(${product.name}, ${query})`, 0.3),
+                  gte(sql`SIMILARITY(${category.name}, ${query})`, 0.3),
+                ),
+              ]
+            : []),
+        ),
+      )
+      .orderBy(
+        query
+          ? sql`GREATEST(
+                SIMILARITY(${product.name}, ${query}),
+                SIMILARITY(${category.name}, ${query})
+                )`
+          : desc(product.createdAt),
+      )
+      .as('base_query');
+
+    const selectQuery = this.db
+      .select()
+      .from(baseQuery)
+      .limit(limit)
+      .offset((page - 1) * limit);
+
+    const countQuery = this.db
+      .select({ count: count().as('count') })
+      .from(baseQuery);
+
+    const [list, [{ count: totalCount }]] = await Promise.all([
+      selectQuery,
+      countQuery,
+    ]);
+
+    return { list, count: totalCount };
+  }
+
+  async deleteProduct(id: number) {
+    await this.db
+      .update(product)
+      .set({ deletedAt: new Date() })
+      .where(eq(product.id, id));
+  }
+}

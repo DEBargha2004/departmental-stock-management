@@ -34,7 +34,7 @@ import {
 import ControlledFormDialog from "@/components/custom/controlled-form-dialog";
 import { useRef } from "react";
 import WarningDialog from "@/components/custom/warning-dialog";
-import { STATUS_FORMATTED, type Status } from "@repo/contracts/status";
+import { STATUS_FORMATTED, type STATUS } from "@repo/contracts/status";
 import {
   vendorCreateSchema,
   vendorUpdateSchema,
@@ -80,7 +80,7 @@ export default function VendorsPage() {
     limit: searchParams.limit,
     page: searchParams.page,
     status:
-      searchParams.status === "all" ? null : (searchParams.status as Status),
+      searchParams.status === "all" ? null : (searchParams.status as STATUS),
   });
   const { mutateAsync: createVendor } = useCreateVendorMutation();
   const { mutateAsync: updateVendor } = useUpdateVendorMutation();
@@ -213,7 +213,7 @@ export default function VendorsPage() {
             }
           >
             <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="STATUS" />
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="all">All Status</SelectItem>

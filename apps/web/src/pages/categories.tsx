@@ -49,7 +49,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { STATUS_FORMATTED, type Status } from "@repo/contracts/status";
+import { STATUS_FORMATTED, type STATUS } from "@repo/contracts/status";
 import ActiveBadge from "@/components/custom/active-badge";
 
 const pageLimits = [10, 20, 30, 40, 50];
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
   const { data: categoryList, isLoading } = useGetAllCategoriesQuery({
     query: debouncedQuery,
     status:
-      searchParams.status === "all" ? null : (searchParams.status as Status),
+      searchParams.status === "all" ? null : (searchParams.status as STATUS),
     limit: searchParams.limit,
     page: searchParams.page,
   });
@@ -212,7 +212,7 @@ export default function CategoriesPage() {
             }
           >
             <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="STATUS" />
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="all">All Status</SelectItem>
@@ -243,7 +243,6 @@ export default function CategoriesPage() {
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Status
               </TableHead>
-
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
                 Actions
               </TableHead>

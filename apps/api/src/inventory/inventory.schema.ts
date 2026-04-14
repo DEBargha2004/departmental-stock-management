@@ -7,8 +7,8 @@ import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { vendor } from 'src/database/schema';
 import { user } from 'src/user/user.schema';
-import type { PO_STATUS } from '@repo/contracts/status';
-import { item } from './item.schema';
+import type { MOVEMENT_TYPE, PO_STATUS } from '@repo/contracts/status';
+import { product } from './product.schema';
 
 // stock procurement detail
 export const purchaseOrder = pgTable('purchase_order', {
@@ -30,9 +30,9 @@ export const purchaseOrderItems = pgTable('purchase_order_items', {
     .notNull()
     .references(() => purchaseOrder.id),
 
-  itemId: integer('item_id')
+  productId: integer('product_id')
     .notNull()
-    .references(() => item.id),
+    .references(() => product.id),
 
   quantity: integer('quantity').notNull(),
   unitPrice: integer('unit_price').notNull(),
@@ -43,9 +43,9 @@ export const issueItem = pgTable(
   'issue_item',
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    itemId: integer('item_id')
+    productId: integer('product_id')
       .notNull()
-      .references(() => item.id),
+      .references(() => product.id),
     quantity: integer('quantity').notNull(),
     issuedBy: integer('issued_by')
       .notNull()
@@ -57,9 +57,7 @@ export const issueItem = pgTable(
 
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (table) => [
-    check('issue_item_quantity_check', sql`${issueItem.quantity} > 0`),
-  ],
+  (table) => [check('issue_item_quantity_check', sql`${table.quantity} > 0`)],
 );
 
 export const returnItem = pgTable(
@@ -74,13 +72,55 @@ export const returnItem = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [
-    check(
-      'return_item_quantity_check',
-      sql`${returnItem.quantityReceived} > 0`,
-    ),
+    check('return_item_quantity_check', sql`${table.quantityReceived} > 0`),
+  ],
+);
+
+export const stock = pgTable(
+  'stock',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => product.id),
+
+    minStockLevel: integer('min_stock_level'),
+    quantityAvailable: integer('quantity_available').notNull().default(0),
+    quantityIssued: integer('quantity_issued').notNull().default(0),
+    quantityDamaged: integer('quantity_damaged').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [check('min_stock_level_check', sql`${table.minStockLevel} > 0`)],
+);
+
+// stocky movement history
+export const stockMovement = pgTable('stock_movement', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  productId: integer('product_id')
+    .notNull()
+    .references(() => product.id),
+
+  movementType: text('movement_type').$type<MOVEMENT_TYPE>().notNull(),
+  quantity: integer('quantity').notNull(),
+  reference: text('reference'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const stockBatch = pgTable(
+  'stock_batch',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    purchaseOrderItemId: integer('purchase_order_item_id')
+      .notNull()
+      .references(() => purchaseOrderItems.id),
+
+    quantityReceived: integer('quantity_received').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    check('stock_batch_quantity_check', sql`${table.quantityReceived} > 0`),
   ],
 );
 
 export * from './category.schema';
-export * from './item.schema';
-export * from './stock.schema';
+export * from './product.schema';

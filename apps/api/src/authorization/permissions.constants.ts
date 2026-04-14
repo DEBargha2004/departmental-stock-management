@@ -22,6 +22,11 @@ export const PERMISSIONS = {
   CATEGORY_READ: 'category.read',
   CATEGORY_UPDATE: 'category.update',
   CATEGORY_DELETE: 'category.delete',
+
+  STOCK_CREATE: 'stock.create',
+  STOCK_READ: 'stock.read',
+  STOCK_UPDATE: 'stock.update',
+  STOCK_DELETE: 'stock.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

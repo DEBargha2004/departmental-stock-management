@@ -1,6 +1,6 @@
 {
-  "id": "f80d0d60-d7a4-4157-ac7b-37d199d38932",
-  "prevId": "2b47c4a2-c4e9-45dd-ae0d-8948cb86ccea",
+  "id": "8962244a-0deb-4ce1-b813-8850976b6cca",
+  "prevId": "c7ee06cf-e027-4182-849a-933b8697fd02",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -238,8 +238,8 @@
             "cycle": false
           }
         },
-        "item_id": {
-          "name": "item_id",
+        "product_id": {
+          "name": "product_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -272,12 +272,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "issue_item_item_id_item_id_fk": {
-          "name": "issue_item_item_id_item_id_fk",
+        "issue_item_product_id_product_id_fk": {
+          "name": "issue_item_product_id_product_id_fk",
           "tableFrom": "issue_item",
-          "tableTo": "item",
+          "tableTo": "product",
           "columnsFrom": [
-            "item_id"
+            "product_id"
           ],
           "columnsTo": [
             "id"
@@ -431,8 +431,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "item_id": {
-          "name": "item_id",
+        "product_id": {
+          "name": "product_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -472,12 +472,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "purchase_order_items_item_id_item_id_fk": {
-          "name": "purchase_order_items_item_id_item_id_fk",
+        "purchase_order_items_product_id_product_id_fk": {
+          "name": "purchase_order_items_product_id_product_id_fk",
           "tableFrom": "purchase_order_items",
-          "tableTo": "item",
+          "tableTo": "product",
           "columnsFrom": [
-            "item_id"
+            "product_id"
           ],
           "columnsTo": [
             "id"
@@ -560,161 +560,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.category": {
-      "name": "category",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "category_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.item": {
-      "name": "item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "item_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "category_id": {
-          "name": "category_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "min_stock_level": {
-          "name": "min_stock_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "item_category_id_category_id_fk": {
-          "name": "item_category_id_category_id_fk",
-          "tableFrom": "item",
-          "tableTo": "category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "min_stock_level_check": {
-          "name": "min_stock_level_check",
-          "value": "\"item\".\"min_stock_level\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.stock": {
       "name": "stock",
       "schema": "",
@@ -736,11 +581,17 @@
             "cycle": false
           }
         },
-        "item_id": {
-          "name": "item_id",
+        "product_id": {
+          "name": "product_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "min_stock_level": {
+          "name": "min_stock_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "quantity_available": {
           "name": "quantity_available",
@@ -773,12 +624,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "stock_item_id_item_id_fk": {
-          "name": "stock_item_id_item_id_fk",
+        "stock_product_id_product_id_fk": {
+          "name": "stock_product_id_product_id_fk",
           "tableFrom": "stock",
-          "tableTo": "item",
+          "tableTo": "product",
           "columnsFrom": [
-            "item_id"
+            "product_id"
           ],
           "columnsTo": [
             "id"
@@ -790,7 +641,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "min_stock_level_check": {
+          "name": "min_stock_level_check",
+          "value": "\"stock\".\"min_stock_level\" > 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.stock_batch": {
@@ -853,7 +709,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "stock_batch_quantity_check": {
+          "name": "stock_batch_quantity_check",
+          "value": "\"stock_batch\".\"quantity_received\" > 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.stock_movement": {
@@ -877,8 +738,8 @@
             "cycle": false
           }
         },
-        "item_id": {
-          "name": "item_id",
+        "product_id": {
+          "name": "product_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -911,12 +772,161 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "stock_movement_item_id_item_id_fk": {
-          "name": "stock_movement_item_id_item_id_fk",
+        "stock_movement_product_id_product_id_fk": {
+          "name": "stock_movement_product_id_product_id_fk",
           "tableFrom": "stock_movement",
-          "tableTo": "item",
+          "tableTo": "product",
           "columnsFrom": [
-            "item_id"
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.category": {
+      "name": "category",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "category_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.product": {
+      "name": "product",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "product_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "product_category_id_category_id_fk": {
+          "name": "product_category_id_category_id_fk",
+          "tableFrom": "product",
+          "tableTo": "category",
+          "columnsFrom": [
+            "category_id"
           ],
           "columnsTo": [
             "id"

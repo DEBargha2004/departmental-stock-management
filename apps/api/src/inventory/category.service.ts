@@ -4,9 +4,9 @@ import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { category } from './category.schema';
 import { TQuery } from 'src/global/types/query';
-import { Status } from '@repo/contracts/status';
+import { STATUS } from '@repo/contracts/status';
 import { TCategoryQuery } from '@repo/contracts/query';
-import { item } from './item.schema';
+import { product } from './product.schema';
 
 @Injectable()
 export class CategoryService {
@@ -41,10 +41,10 @@ export class CategoryService {
         description: category.description,
         isActive: category.isActive,
         createdAt: category.createdAt,
-        itemsCount: count(item.id).as('itemsCount'),
+        itemsCount: count(product.id).as('productsCount'),
       })
       .from(category)
-      .leftJoin(item, eq(category.id, item.categoryId))
+      .leftJoin(product, eq(category.id, product.categoryId))
       .where(
         and(
           isNull(category.deletedAt),

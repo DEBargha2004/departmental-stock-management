@@ -1,5 +1,5 @@
 import type { Role } from "./auth/roles.js";
-import type { Status } from "./status.js";
+import type { PRODUCT_STATUS, STATUS } from "./status.js";
 
 export type TQuery = {
   query?: string;
@@ -9,13 +9,18 @@ export type TQuery = {
 
 export type TUserQuery = TQuery & {
   role?: Role | null;
-  status?: Status | null;
+  status?: STATUS | null;
 };
 
 export type TCategoryQuery = TQuery & {
-  status?: Status | null;
+  status?: STATUS | null;
 };
 
 export type TVendorQuery = TQuery & {
-  status?: Status | null;
+  status?: STATUS | null;
+};
+
+export type TProductQuery = TQuery & {
+  status?: PRODUCT_STATUS | null;
+  category?: number | null;
 };

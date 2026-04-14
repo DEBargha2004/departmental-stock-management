@@ -57,7 +57,7 @@ import { useRef } from "react";
 import WarningDialog from "@/components/custom/warning-dialog";
 import UpdateUserForm from "@/components/custom/forms/user-update";
 import ActiveBadge from "@/components/custom/active-badge";
-import { STATUS_FORMATTED, type Status } from "@repo/contracts/status";
+import { STATUS_FORMATTED, type STATUS } from "@repo/contracts/status";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -88,7 +88,7 @@ export default function UsersPage() {
     limit: searchParams.limit,
     page: searchParams.page,
     status:
-      searchParams.status === "all" ? null : (searchParams.status as Status),
+      searchParams.status === "all" ? null : (searchParams.status as STATUS),
   });
   const { mutateAsync: createUser } = useCreateUserMutation();
   const { mutateAsync: updateUser } = useUpdateUserMutation();
@@ -221,7 +221,7 @@ export default function UsersPage() {
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent position="popper">
-              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {ROLES_FORMATTED.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.label}
@@ -236,10 +236,10 @@ export default function UsersPage() {
             }
           >
             <SelectTrigger className="h-9 w-full sm:w-[130px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="STATUS" />
             </SelectTrigger>
             <SelectContent position="popper">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               {STATUS_FORMATTED.map((status) => (
                 <SelectItem key={status.id} value={status.id}>
                   {status.label}
