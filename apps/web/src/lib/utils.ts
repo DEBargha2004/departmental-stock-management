@@ -13,3 +13,8 @@ export const formatDate = (
 
   return formatter.format(new Date(date));
 };
+
+export function getImageUrl(path: string) {
+  if (!path) return "";
+  return `${import.meta.env.VITE_S3_URL}/${path}`;
+}

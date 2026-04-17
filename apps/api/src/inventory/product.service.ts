@@ -21,6 +21,17 @@ import {
 import { category } from './category.schema';
 import { stock } from './inventory.schema';
 
+type TCategoryForProduct = {
+  id: number;
+  name: string;
+  description: string;
+};
+
+type TStockForProduct = {
+  quantity: number;
+  minStockLevel: number;
+};
+
 @Injectable()
 export class ProductService {
   constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
@@ -62,15 +73,15 @@ export class ProductService {
         description: product.description,
         imageUrl: product.imageUrl,
         price: product.price,
-        category: {
-          id: category.id,
-          name: category.name,
-          description: category.description,
-        },
-        stock: {
-          quantity: stock.quantityAvailable,
-          minStockLevel: stock.minStockLevel,
-        },
+        category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
+          'id', ${category.id},
+          'name', ${category.name},
+          'description', ${category.description}
+        )`.as('category'),
+        stock: sql<TStockForProduct>`JSON_BUILD_OBJECT(
+          'quantity', ${stock.quantityAvailable},
+          'minStockLevel', ${stock.minStockLevel}
+        )`.as('stock'),
       })
       .from(product)
       .leftJoin(category, eq(product.categoryId, category.id))
@@ -95,17 +106,20 @@ export class ProductService {
   }: TProductQuery) {
     const baseQuery = this.db
       .select({
-        product: {
-          id: product.id,
-          name: product.name,
-        },
-        category: {
-          id: category.id,
-          name: category.name,
-        },
-        quantity: stock.quantityAvailable,
-        minStockLevel: stock.minStockLevel,
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        imageUrl: product.imageUrl,
         price: product.price,
+        category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
+          'id', ${category.id},
+          'name', ${category.name},
+          'description', ${category.description}
+        )`.as('category'),
+        stock: sql<TStockForProduct>`JSON_BUILD_OBJECT(
+          'quantity', ${stock.quantityAvailable},
+          'minStockLevel', ${stock.minStockLevel}
+        )`.as('stock'),
       })
       .from(product)
       .leftJoin(category, eq(product.categoryId, category.id))
@@ -141,10 +155,12 @@ export class ProductService {
       )
       .orderBy(
         query
-          ? sql`GREATEST(
+          ? desc(
+              sql`GREATEST(
                 SIMILARITY(${product.name}, ${query}),
                 SIMILARITY(${category.name}, ${query})
-                )`
+                )`,
+            )
           : desc(product.createdAt),
       )
       .as('base_query');

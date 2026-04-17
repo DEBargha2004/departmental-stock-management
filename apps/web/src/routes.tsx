@@ -8,7 +8,7 @@ import DashboardPage from "./pages/dashboard";
 import AppLayout from "./layouts/app-layout";
 import UsersPage from "./pages/users/index";
 import CategoriesPage from "./pages/categories";
-import ProductsPage from "./pages/products";
+import ProductsPage from "./pages/products/index";
 import VendorsPage from "./pages/vendors/index";
 import ActivityLogPage from "./pages/activity-log";
 

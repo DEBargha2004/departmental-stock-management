@@ -97,15 +97,9 @@ export class InventoryController {
     @Body(new ZodValidationPipe(productCreateSchema))
     productDto: TProductCreateSchema,
   ) {
-    const product = await this.inventoryService.createItem(productDto);
-  }
+    const res = await this.inventoryService.createItem(productDto);
 
-  @Auth('product.read', 'stock.read')
-  @Get('/item/:id')
-  async getItem(@Param('id', ParseIntPipe) id: number) {
-    const res = await this.inventoryService.getItem(id);
-
-    return ResponseBuilder.success(res, 'Item fetched successfully');
+    return ResponseBuilder.success(res, 'Item created successfully');
   }
 
   @Auth('product.read', 'stock.read')
@@ -115,7 +109,7 @@ export class InventoryController {
     @Query('limit', ParseIntPipe) limit: number,
     @Query('page', ParseIntPipe) page: number,
     @Query('status') status?: PRODUCT_STATUS,
-    @Query('category', ParseIntPipe) category?: number,
+    @Query('category', new ParseIntPipe({ optional: true })) category?: number,
   ) {
     const res = await this.inventoryService.getItems({
       query,
@@ -126,6 +120,14 @@ export class InventoryController {
     });
 
     return ResponseBuilder.success(res, 'Items fetched successfully');
+  }
+
+  @Auth('product.read', 'stock.read')
+  @Get('/item/:id')
+  async getItem(@Param('id', ParseIntPipe) id: number) {
+    const res = await this.inventoryService.getItem(id);
+
+    return ResponseBuilder.success(res, 'Item fetched successfully');
   }
 
   @Auth('product.update', 'stock.update')

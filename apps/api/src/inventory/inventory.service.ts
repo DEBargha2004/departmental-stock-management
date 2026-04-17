@@ -4,21 +4,8 @@ import type {
   TProductCreateSchema,
   TProductUpdateSchema,
 } from '@repo/contracts/item';
-import {
-  and,
-  count,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  max,
-  or,
-  sql,
-} from 'drizzle-orm';
-import { product } from './product.schema';
-import { category } from './category.schema';
-import { purchaseOrder, stock } from './inventory.schema';
+import { inArray, max } from 'drizzle-orm';
+import { purchaseOrder } from './inventory.schema';
 import { TProductQuery } from '@repo/contracts/query';
 import { CategoryService } from './category.service';
 import { ProductService } from './product.service';
@@ -46,7 +33,22 @@ export class InventoryService {
       minQuantity: itemDto.minStockLevel,
     });
 
-    return { product, stock: stockEntry };
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      imageUrl: product.imageUrl,
+      price: product.price,
+      category: {
+        id: category.id,
+        name: category.name,
+        description: category.description,
+      },
+      stock: {
+        quantity: stockEntry.quantityAvailable,
+        minStockLevel: stockEntry.minStockLevel,
+      },
+    };
   }
 
   async getItem(id: number) {
@@ -80,8 +82,24 @@ export class InventoryService {
     await this.stockService.updateStockMetadata(id, {
       minQuantity: itemDto.minStockLevel,
     });
+    const pr = await this.categoryService.getCategory(itemDto.categoryId);
 
-    return item;
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      imageUrl: item.imageUrl,
+      price: item.price,
+      category: {
+        id: pr.id,
+        name: pr.name,
+        description: pr.description,
+      },
+      stock: {
+        quantity: stockDetails.quantityAvailable,
+        minStockLevel: itemDto.minStockLevel,
+      },
+    };
   }
 
   async deleteItem(id: number) {

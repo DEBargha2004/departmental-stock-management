@@ -25,7 +25,7 @@ export class StockService {
     quantity: number;
     minQuantity: number;
   }) {
-    const entry = await this.db
+    const [entry] = await this.db
       .insert(stock)
       .values({
         productId: productId,
