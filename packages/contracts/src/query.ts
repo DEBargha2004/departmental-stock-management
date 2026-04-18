@@ -24,3 +24,8 @@ export type TProductQuery = TQuery & {
   status?: PRODUCT_STATUS | null;
   category?: number | null;
 };
+
+export type TPurchaseOrderQuery = TQuery & {
+  status?: string | null;
+  vendorId?: number | null;
+};

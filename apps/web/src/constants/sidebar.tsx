@@ -2,6 +2,7 @@ import type { TSidebarItem } from "@/types/sidebar-item";
 import {
   Box,
   Boxes,
+  FileBox,
   LayoutDashboard,
   ScrollText,
   Store,
@@ -50,6 +51,15 @@ export const sidebarItems: TSidebarItem[] = [
     icon: Store,
     label: "Vendors",
     href: "/vendors",
+    isActive(path) {
+      return path === this.href;
+    },
+  },
+  {
+    id: "purchase-orders",
+    icon: FileBox,
+    label: "Purchase Orders",
+    href: "/purchase-orders",
     isActive(path) {
       return path === this.href;
     },

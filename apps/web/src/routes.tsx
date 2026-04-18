@@ -11,6 +11,7 @@ import CategoriesPage from "./pages/categories";
 import ProductsPage from "./pages/products/index";
 import VendorsPage from "./pages/vendors/index";
 import ActivityLogPage from "./pages/activity-log";
+import PurchaseOrdersPage from "./pages/purchase-orders/index";
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +58,10 @@ export const router = createBrowserRouter([
           {
             path: "/vendors",
             Component: VendorsPage,
+          },
+          {
+            path: "/purchase-orders",
+            Component: PurchaseOrdersPage,
           },
           {
             path: "/activity-log",

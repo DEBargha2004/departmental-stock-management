@@ -61,6 +61,10 @@
     "./query": {
       "types": "./src/query.ts",
       "default": "./dist/query.js"
+    },
+    "./purchase-order": {
+      "types": "./src/purchase-order.ts",
+      "default": "./dist/purchase-order.js"
     }
   }
 }
