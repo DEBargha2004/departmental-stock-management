@@ -2,8 +2,9 @@ import { z } from "zod";
 
 export const purchaseOrderCreateSchema = z.object({
   vendorId: z.number().min(1, "Vendor is required"),
+  invoiceId: z.string().min(1, "Invoice ID is required"),
   orderDate: z.string().min(1, "Order date is required"),
-  expectedDeliveryDate: z.string().optional(),
+
   items: z
     .array(
       z.object({
@@ -13,7 +14,6 @@ export const purchaseOrderCreateSchema = z.object({
       }),
     )
     .min(1, "At least one item is required"),
-  notes: z.string().optional(),
 });
 
 export const purchaseOrderUpdateSchema = purchaseOrderCreateSchema.partial();

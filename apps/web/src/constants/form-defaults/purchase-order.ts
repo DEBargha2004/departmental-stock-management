@@ -2,15 +2,14 @@ import type { TPurchaseOrderCreateSchema } from "@repo/contracts/purchase-order"
 
 export const getDefaultPurchaseOrderCreateValues =
   (): TPurchaseOrderCreateSchema => ({
-    vendorId: 0,
-    orderDate: new Date().toISOString().split("T")[0],
-    expectedDeliveryDate: "",
-    items: [
-      {
-        itemId: 0,
-        quantity: 1,
-        unitPrice: 0,
-      },
-    ],
-    notes: "",
+    vendorId: null as unknown as number,
+    invoiceId: "",
+    orderDate: new Date().toDateString(),
+    items: [getDefaultPurchaseOrderItemValues()],
   });
+
+export const getDefaultPurchaseOrderItemValues = () => ({
+  itemId: null as unknown as number,
+  quantity: 1,
+  unitPrice: 0,
+});

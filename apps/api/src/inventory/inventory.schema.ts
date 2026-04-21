@@ -18,7 +18,6 @@ export const purchaseOrder = pgTable('purchase_order', {
     .notNull()
     .references(() => vendor.id),
 
-  status: text('status').$type<PO_STATUS>().notNull(),
   totalAmount: integer('total_amount').notNull(),
   orderDate: date('order_date').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),

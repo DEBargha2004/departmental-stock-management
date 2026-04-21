@@ -137,12 +137,7 @@ export default function PurchaseOrdersPage() {
     if (btn) {
       activeUpdatePO.current = poId;
       btn.click();
-      updateForm.reset({
-        vendorId: 1, // Mock
-        orderDate: data?.orderDate.split("T")[0] || "",
-        notes: "",
-        items: [],
-      });
+      updateForm.reset(getDefaultPurchaseOrderCreateValues());
     }
   };
 
