@@ -7,15 +7,17 @@ export function useGetAllPurchaseOrdersQuery({
   limit,
   page,
   status,
+  vendorId,
 }: TPurchaseOrderQuery) {
   return useQuery({
-    queryKey: ["purchase-orders", query, limit, page, status],
+    queryKey: ["purchase-orders", query, limit, page, status, vendorId],
     queryFn: () =>
       getAllPurchaseOrdersRequest({
         query,
         limit,
         page,
         status,
+        vendorId,
       }),
   });
 }

@@ -1,5 +1,9 @@
 import type { Role } from "./auth/roles.js";
-import type { PRODUCT_STATUS, STATUS } from "./status.js";
+import type {
+  PRODUCT_STATUS,
+  PURCHASE_ORDER_STATUS,
+  STATUS,
+} from "./status.js";
 
 export type TQuery = {
   query?: string;
@@ -26,6 +30,6 @@ export type TProductQuery = TQuery & {
 };
 
 export type TPurchaseOrderQuery = TQuery & {
-  status?: string | null;
+  status?: PURCHASE_ORDER_STATUS | null;
   vendorId?: number | null;
 };

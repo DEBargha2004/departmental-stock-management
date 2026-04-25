@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { stock } from './inventory.schema';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, max } from 'drizzle-orm';
+import { TPurchaseOrderCreateSchema } from '@repo/contracts/purchase-order';
 
 @Injectable()
 export class StockService {

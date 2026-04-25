@@ -12,6 +12,8 @@ import { SeederService } from './seeder.service';
 import { UserManagementModule } from './user-management/user-management.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { VendorModule } from './vendor/vendor.module';
+import { StockProcurementModule } from './stock-procurement/stock-procurement.module';
+import { RouterModule } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -27,8 +29,15 @@ import { VendorModule } from './vendor/vendor.module';
     AuthModule,
     AuthorizationModule,
     UserManagementModule,
-    InventoryModule,
     VendorModule,
+    InventoryModule,
+    StockProcurementModule,
+    RouterModule.register([
+      {
+        path: 'inventory',
+        module: InventoryModule,
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService, SeederService],

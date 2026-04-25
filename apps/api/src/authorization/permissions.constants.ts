@@ -27,6 +27,11 @@ export const PERMISSIONS = {
   STOCK_READ: 'stock.read',
   STOCK_UPDATE: 'stock.update',
   STOCK_DELETE: 'stock.delete',
+
+  PURCHASE_ORDER_CREATE: 'purchase-order.create',
+  PURCHASE_ORDER_READ: 'purchase-order.read',
+  PURCHASE_ORDER_UPDATE: 'purchase-order.update',
+  PURCHASE_ORDER_DELETE: 'purchase-order.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

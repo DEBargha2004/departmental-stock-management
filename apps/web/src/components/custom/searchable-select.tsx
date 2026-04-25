@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Input } from "../ui/input";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Popover as PopoverPrimitive } from "radix-ui";
 
 type SearchableSelectContextType<T> = {
   list: T[];
@@ -82,10 +83,14 @@ export default function SearchableSelect<T>({
 
 export function SearchableSelectTrigger({
   children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <PopoverTrigger>{children}</PopoverTrigger>;
+  className,
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+  return (
+    <PopoverTrigger className={cn("", className)} {...props}>
+      {children}
+    </PopoverTrigger>
+  );
 }
 
 export function SearchableSelectContent({

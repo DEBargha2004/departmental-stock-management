@@ -9,7 +9,7 @@ import type {
   TVendorUpdateSchema,
 } from "@repo/contracts/vendor";
 
-type TVendor = {
+export type TVendor = {
   id: number;
   name: string;
   contactPerson: string;

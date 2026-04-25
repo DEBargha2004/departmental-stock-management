@@ -4,8 +4,6 @@ import type {
   TProductCreateSchema,
   TProductUpdateSchema,
 } from '@repo/contracts/item';
-import { inArray, max } from 'drizzle-orm';
-import { purchaseOrder } from './inventory.schema';
 import { TProductQuery } from '@repo/contracts/query';
 import { CategoryService } from './category.service';
 import { ProductService } from './product.service';
@@ -105,18 +103,5 @@ export class InventoryService {
   async deleteItem(id: number) {
     await this.productService.deleteProduct(id);
     await this.stockService.deleteStockEntry(id);
-  }
-
-  async getLastOrderOfVendor(vendorIds: number[]) {
-    const res = await this.db
-      .select({
-        vendorId: purchaseOrder.vendorId,
-        lastOrderDate: max(purchaseOrder.orderDate),
-      })
-      .from(purchaseOrder)
-      .where(inArray(purchaseOrder.vendorId, vendorIds))
-      .groupBy(purchaseOrder.vendorId);
-
-    return res;
   }
 }

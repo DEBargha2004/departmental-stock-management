@@ -14,7 +14,7 @@ import type { TFormProps } from "@/types/form-props";
 import type { TPurchaseOrderCreateSchema } from "@repo/contracts/purchase-order";
 import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
 import { useGetAllItemsQuery } from "@/controllers/product/query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SearchableSelect, {
   SearchableSelectContent,
   SearchableSelectInput,
@@ -26,16 +26,22 @@ import SearchableSelect, {
 import type { TProduct } from "@/controllers/product/api";
 import { getDefaultPurchaseOrderItemValues } from "@/constants/form-defaults/purchase-order";
 
+type TVendor = {
+  id: number;
+  name: string;
+};
+
 export default function CreatePurchaseOrderForm({
   form,
   onSubmit,
-}: TFormProps<TPurchaseOrderCreateSchema>) {
+  defaultList,
+}: TFormProps<TPurchaseOrderCreateSchema> & {
+  defaultList?: {
+    vendors?: TVendor[];
+    products?: TProduct[];
+  };
+}) {
   const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "items",
-  });
-
-  const itemsWatch = useWatch({
     control: form.control,
     name: "items",
   });
@@ -53,15 +59,7 @@ export default function CreatePurchaseOrderForm({
       query: query.vendors,
     });
 
-  const { data: productsData, isLoading: isLoadingProducts } =
-    useGetAllItemsQuery({
-      limit: 500,
-      page: 1,
-      query: query.products,
-    });
-
   const vendors = vendorsData?.data?.data?.list || [];
-  const products = productsData?.data?.data?.list || [];
 
   const selectedVendorId = useWatch({
     control: form.control,
@@ -69,12 +67,25 @@ export default function CreatePurchaseOrderForm({
   });
 
   const selectedVendor = vendors.find((v) => v.id === selectedVendorId);
+  const items = useWatch({
+    control: form.control,
+    name: "items",
+  });
+
+  const handleDeleteItem = (index: number) => {
+    remove(index);
+    if (items.length === 1) {
+      append(getDefaultPurchaseOrderItemValues());
+    }
+  };
 
   const calculateTotal = () => {
-    return (itemsWatch || []).reduce(
-      (sum, item) => sum + (item.quantity * item.unitPrice || 0),
+    const total = items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
       0,
     );
+
+    form.setValue("totalAmount", total);
   };
 
   return (
@@ -96,7 +107,7 @@ export default function CreatePurchaseOrderForm({
                   onValueChange={(val) => field.onChange(Number(val))}
                   isLoading={isLoadingVendors}
                 >
-                  <SearchableSelectTrigger>
+                  <SearchableSelectTrigger asChild>
                     <Button
                       type="button"
                       className="w-full justify-start"
@@ -110,7 +121,10 @@ export default function CreatePurchaseOrderForm({
                     <SearchableSelectList>
                       <SearchableSelectVacuum />
                       {vendors.map((vendor) => (
-                        <SearchableSelectItem value={vendor.id.toString()}>
+                        <SearchableSelectItem
+                          key={vendor.id}
+                          value={vendor.id.toString()}
+                        >
                           {vendor.name}
                         </SearchableSelectItem>
                       ))}
@@ -171,22 +185,46 @@ export default function CreatePurchaseOrderForm({
 
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {fields.map((field, index) => (
-              <ProductSelect key={field.id} index={index} />
+              <ProductSelect
+                key={field.id}
+                index={index}
+                handleDeleteItem={handleDeleteItem}
+                calculateTotal={calculateTotal}
+                defaultList={[defaultList?.products?.[index] ?? []]}
+              />
             ))}
           </div>
 
           <div className="flex justify-end pt-2">
-            <div className="bg-muted/30 px-4 py-2 rounded-lg border border-dashed flex items-center gap-4">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Total Amount:
-              </span>
-              <span className="text-lg font-bold text-foreground">
-                ₹&nbsp;
-                {calculateTotal().toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            </div>
+            <FormField
+              control={form.control}
+              name="totalAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="bg-muted/30 px-4 py-2 rounded-lg border border-dashed flex items-center gap-4">
+                      <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider m-0">
+                        Total Amount:
+                      </FormLabel>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          className="pl-7 bg-transparent border-none text-lg font-bold text-foreground focus-visible:ring-0 w-[150px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 
@@ -209,15 +247,15 @@ export default function CreatePurchaseOrderForm({
 function ProductSelect({
   index,
   defaultList,
+  handleDeleteItem,
+  calculateTotal,
 }: {
   index: number;
   defaultList?: TProduct[];
+  handleDeleteItem: (index: number) => void;
+  calculateTotal: () => void;
 }) {
-  const { control } = useFormContext<TPurchaseOrderCreateSchema>();
-  const { fields, remove } = useFieldArray({
-    control: control,
-    name: "items",
-  });
+  const { control, setValue } = useFormContext<TPurchaseOrderCreateSchema>();
   const [query, setQuery] = useState("");
   const { data: products, isLoading: isLoadingProducts } = useGetAllItemsQuery({
     limit: 500,
@@ -232,8 +270,19 @@ function ProductSelect({
       : products?.data.data?.list;
 
   const getProduct = (id: number) => {
-    return dataList?.find((p) => p.id === id);
+    const d = dataList?.find((p) => p.id === Number(id));
+
+    return d;
   };
+
+  const item = useWatch({
+    control,
+    name: `items.${index}`,
+  });
+
+  useEffect(() => {
+    calculateTotal();
+  }, [item.quantity, item.unitPrice]);
 
   return (
     <div className="group grid relative gap-3 border p-3 rounded-lg bg-card/50 transition-colors hover:bg-card">
@@ -248,13 +297,19 @@ function ProductSelect({
 
             <FormControl>
               <SearchableSelect
-                list={defaultList ?? []}
+                list={dataList ?? []}
                 query={query}
                 onQueryChange={setQuery}
-                onValueChange={(val) => field.onChange(Number(val))}
+                onValueChange={(val) => {
+                  field.onChange(val);
+                  setValue(
+                    `items.${index}.unitPrice`,
+                    getProduct(Number(val))?.price ?? 0,
+                  );
+                }}
                 isLoading={isLoadingProducts}
               >
-                <SearchableSelectTrigger>
+                <SearchableSelectTrigger asChild>
                   <Button
                     type="button"
                     className="w-full justify-start"
@@ -299,7 +354,7 @@ function ProductSelect({
                   type="number"
                   className="h-9"
                   {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  onChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />
@@ -323,7 +378,7 @@ function ProductSelect({
                     type="number"
                     className="h-9 pl-6"
                     {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    onChange={field.onChange}
                   />
                 </div>
               </FormControl>
@@ -338,9 +393,8 @@ function ProductSelect({
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => remove(index)}
+          onClick={() => handleDeleteItem(index)}
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          disabled={fields.length === 1}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

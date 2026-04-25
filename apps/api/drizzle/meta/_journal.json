@@ -43,6 +43,34 @@
       "when": 1776750484790,
       "tag": "0005_needy_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777114207218,
+      "tag": "0006_tricky_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777124092339,
+      "tag": "0007_quick_ben_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777124412281,
+      "tag": "0008_keen_kingpin",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777140356694,
+      "tag": "0009_awesome_satana",
+      "breakpoints": true
     }
   ]
 }

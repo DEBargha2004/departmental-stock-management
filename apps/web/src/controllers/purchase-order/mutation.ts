@@ -4,7 +4,6 @@ import {
   deletePurchaseOrderRequest,
   updatePurchaseOrderRequest,
 } from "./api";
-import { toast } from "sonner";
 
 export function useCreatePurchaseOrderMutation() {
   const queryClient = useQueryClient();
@@ -12,7 +11,6 @@ export function useCreatePurchaseOrderMutation() {
     mutationFn: createPurchaseOrderRequest,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
-      toast.success(res.data.message);
     },
   });
 }
@@ -23,7 +21,6 @@ export function useUpdatePurchaseOrderMutation() {
     mutationFn: updatePurchaseOrderRequest,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
-      toast.success(res.data.message);
     },
   });
 }
@@ -34,7 +31,6 @@ export function useDeletePurchaseOrderMutation() {
     mutationFn: deletePurchaseOrderRequest,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
-      toast.success(res.data.message);
     },
   });
 }

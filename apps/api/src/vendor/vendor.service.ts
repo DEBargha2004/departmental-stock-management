@@ -11,15 +11,14 @@ import {
 } from '@repo/contracts/vendor';
 import { vendor } from './vendor.schema';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
-import type { TFilter } from '@repo/contracts/filter';
-import { TQuery, TVendorQuery } from '@repo/contracts/query';
-import { InventoryService } from 'src/inventory/inventory.service';
+import { TVendorQuery } from '@repo/contracts/query';
+import { StockProcurementService } from 'src/stock-procurement/stock-procurement.service';
 
 @Injectable()
 export class VendorService {
   constructor(
     @Inject(DATABASE_MODULE) private db: TDB,
-    private inventoryService: InventoryService,
+    private stockProcurementService: StockProcurementService,
   ) {}
 
   async createVendor(payload: TVendorCreateSchema) {
@@ -79,9 +78,8 @@ export class VendorService {
 
     if (!res) throw new NotFoundException('Vendor not found');
 
-    const lastOrderInfo = await this.inventoryService.getLastOrderOfVendor([
-      res.id,
-    ]);
+    const lastOrderInfo =
+      await this.stockProcurementService.getLastOrderOfVendor([res.id]);
 
     return {
       ...res,
@@ -147,9 +145,10 @@ export class VendorService {
       countQuery,
     ]);
 
-    const lastOrderInfos = await this.inventoryService.getLastOrderOfVendor(
-      list.map((i) => i.id),
-    );
+    const lastOrderInfos =
+      await this.stockProcurementService.getLastOrderOfVendor(
+        list.map((i) => i.id),
+      );
 
     const listWithOrderDate = list.map((v) => {
       const lastOrder = lastOrderInfos.find((lo) => lo.vendorId === v.id);

@@ -5,6 +5,7 @@ export const getDefaultPurchaseOrderCreateValues =
     vendorId: null as unknown as number,
     invoiceId: "",
     orderDate: new Date().toDateString(),
+    totalAmount: 0,
     items: [getDefaultPurchaseOrderItemValues()],
   });
 

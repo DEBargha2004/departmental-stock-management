@@ -32,7 +32,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import ControlledFormDialog from "@/components/custom/controlled-form-dialog";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import WarningDialog from "@/components/custom/warning-dialog";
 import {
   purchaseOrderCreateSchema,
@@ -50,29 +50,21 @@ import { useGetAllPurchaseOrdersQuery } from "@/controllers/purchase-order/query
 import CreatePurchaseOrderForm from "@/components/custom/forms/purchase-order-create";
 import { getPurchaseOrderRequest } from "@/controllers/purchase-order/api";
 import { formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import {
+  PURCHASE_ORDER_STATUS_FORMATTED,
+  type PURCHASE_ORDER_STATUS,
+} from "@repo/contracts/status";
+import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
+import { POStatusBadge } from "./_components/po-status";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import PurchaseOrderItemList from "./_components/purchase-order-item-list";
 
 const pageLimits = [10, 20, 30, 40, 50];
-
-const POStatusBadge = ({ status }: { status: string }) => {
-  const colors =
-    {
-      DRAFT: "bg-slate-100 text-slate-800 border-slate-200",
-      APPROVED: "bg-blue-100 text-blue-800 border-blue-200",
-      RECEIVED: "bg-green-100 text-green-800 border-green-200",
-    }[status] || "bg-gray-100 text-gray-800 border-gray-200";
-
-  return (
-    <div
-      className={cn(
-        "px-2.5 py-0.5 rounded-full text-[11px] font-semibold border w-fit",
-        colors,
-      )}
-    >
-      {status}
-    </div>
-  );
-};
 
 export default function PurchaseOrdersPage() {
   const [searchParams, setSearchParams] = useQueryStates({
@@ -80,9 +72,13 @@ export default function PurchaseOrdersPage() {
     limit: parseAsInteger.withDefault(20),
     page: parseAsInteger.withDefault(1),
     status: parseAsString.withDefault("all"),
+    vendorId: parseAsInteger.withDefault(-1),
   });
   const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
   const activeUpdatePO = useRef<number | null>(null);
+  const [activePurchaseOrderItems, setActivePurchaseOrderItems] = useState<
+    TPurchaseOrderUpdateSchema["items"]
+  >([]);
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
@@ -98,7 +94,16 @@ export default function PurchaseOrdersPage() {
     query: debouncedQuery,
     limit: searchParams.limit,
     page: searchParams.page,
-    status: searchParams.status === "all" ? null : searchParams.status,
+    status: (searchParams.status === "all"
+      ? null
+      : searchParams.status) as PURCHASE_ORDER_STATUS,
+    vendorId: searchParams.vendorId === -1 ? null : searchParams.vendorId,
+  });
+
+  const { data: vendors } = useGetAllVendorsQuery({
+    query: "",
+    limit: 1000,
+    page: 1,
   });
 
   const { mutateAsync: createPO } = useCreatePurchaseOrderMutation();
@@ -124,7 +129,11 @@ export default function PurchaseOrdersPage() {
     : 0;
 
   const handleAddPO = async (data: TPurchaseOrderCreateSchema) => {
-    await catchError(createPO(data));
+    const [err, res] = await catchError(createPO(data));
+
+    if (err) return toast.error(err.message);
+
+    toast.success(res.data.message);
     createForm.reset();
   };
 
@@ -134,10 +143,27 @@ export default function PurchaseOrdersPage() {
 
     const btn = updateEntryButtonRef.current;
     const { data } = res.data;
-    if (btn) {
+    if (btn && data) {
       activeUpdatePO.current = poId;
+      setActivePurchaseOrderItems(
+        data.items.map((item) => ({
+          itemId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      );
       btn.click();
-      updateForm.reset(getDefaultPurchaseOrderCreateValues());
+      updateForm.reset({
+        vendorId: data.vendor.id,
+        orderDate: data.orderDate,
+        invoiceId: data.invoiceId,
+        totalAmount: data.totalAmount,
+        items: data.items.map((item) => ({
+          itemId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      });
     }
   };
 
@@ -193,7 +219,15 @@ export default function PurchaseOrdersPage() {
         <ControlledFormDialog
           form={updateForm}
           onSubmit={handleUpdatePO}
-          FormComponent={CreatePurchaseOrderForm}
+          FormComponent={({ form, onSubmit }) => (
+            <CreatePurchaseOrderForm
+              form={form}
+              onSubmit={onSubmit}
+              defaultList={{
+                products: activePurchaseOrderItems,
+              }}
+            />
+          )}
           heading={{
             title: "Update Purchase Order",
             description: "Modify existing purchase order details",
@@ -229,9 +263,29 @@ export default function PurchaseOrdersPage() {
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="DRAFT">Draft</SelectItem>
-              <SelectItem value="APPROVED">Approved</SelectItem>
-              <SelectItem value="RECEIVED">Received</SelectItem>
+              {PURCHASE_ORDER_STATUS_FORMATTED.map((status) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={searchParams.vendorId.toString()}
+            onValueChange={(e) =>
+              setSearchParams({ ...searchParams, vendorId: Number(e) })
+            }
+          >
+            <SelectTrigger className="h-9 w-full sm:w-[150px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
+              <SelectValue placeholder="VENDOR" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="-1">All Vendors</SelectItem>
+              {vendors?.data.data?.list.map((vendor) => (
+                <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                  {vendor.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -293,14 +347,14 @@ export default function PurchaseOrdersPage() {
             ) : (dataList?.list.length ?? 0) > 0 ? (
               dataList?.list?.map((po) => (
                 <TableRow
-                  key={po.id}
                   className="group hover:bg-muted/40 transition-colors border-input/40"
+                  key={po.id}
                 >
                   <TableCell className="font-medium py-3 text-sm">
                     PO-{po.id.toString().padStart(5, "0")}
                   </TableCell>
                   <TableCell className="py-3 text-sm font-medium">
-                    {po.vendorName}
+                    {po.vendor.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-muted-foreground">
                     {formatDate(po.orderDate, {
@@ -310,7 +364,7 @@ export default function PurchaseOrdersPage() {
                     })}
                   </TableCell>
                   <TableCell className="py-3 text-sm font-semibold">
-                    $
+                    ₹
                     {po.totalAmount.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                     })}
@@ -320,14 +374,22 @@ export default function PurchaseOrdersPage() {
                   </TableCell>
                   <TableCell className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleViewPO(po.id)}
-                      >
-                        <Eye className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleViewPO(po.id)}
+                          >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogTitle />
+                          <PurchaseOrderItemList po={po} />
+                        </DialogContent>
+                      </Dialog>
                       <Button
                         variant="ghost"
                         size="icon"
