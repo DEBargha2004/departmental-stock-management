@@ -4,7 +4,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { TConfig } from './lib/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { MigrationService } from './database/migration.service';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -36,7 +35,7 @@ async function bootstrap() {
   app.enableCors({ origin: frontend_url, credentials: true });
   app.set('trust proxy', 'loopback');
 
-  await app.listen(port ?? 3000);
+  await app.listen(port ?? 4000);
 }
 
 bootstrap();

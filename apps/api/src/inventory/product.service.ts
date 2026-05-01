@@ -13,6 +13,7 @@ import {
   eq,
   gt,
   gte,
+  inArray,
   isNull,
   lte,
   or,
@@ -95,6 +96,38 @@ export class ProductService {
       );
 
     return pr;
+  }
+
+  async getProductList(ids: number[]) {
+    const list = await this.db
+      .select({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        imageUrl: product.imageUrl,
+        price: product.price,
+        category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
+          'id', ${category.id},
+          'name', ${category.name},
+          'description', ${category.description}
+        )`.as('category'),
+        stock: sql<TStockForProduct>`JSON_BUILD_OBJECT(
+          'quantity', ${stock.quantityAvailable},
+          'minStockLevel', ${stock.minStockLevel}
+        )`.as('stock'),
+      })
+      .from(product)
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .leftJoin(stock, eq(stock.productId, product.id))
+      .where(
+        and(
+          isNull(product.deletedAt),
+          isNull(category.deletedAt),
+          inArray(product.id, ids),
+        ),
+      );
+
+    return list;
   }
 
   async getProducts({

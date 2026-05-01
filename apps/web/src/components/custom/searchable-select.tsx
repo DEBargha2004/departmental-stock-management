@@ -1,12 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Input } from "../ui/input";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
-type SearchableSelectContextType<T> = {
-  list: T[];
+type SearchableSelectContextType = {
   loading: boolean;
   query: string;
   handleQueryChange: (query: string) => void;
@@ -15,27 +14,25 @@ type SearchableSelectContextType<T> = {
   onOpenChange?: (open: boolean) => void;
 };
 const SearchableSelectContext =
-  createContext<SearchableSelectContextType<unknown> | null>(null);
+  createContext<SearchableSelectContextType | null>(null);
 
-const useSearchableSelectContext = <T,>() => {
+const useSearchableSelectContext = () => {
   const context = useContext(SearchableSelectContext);
   if (!context) {
     throw new Error(
       "useSearchableSelectContext must be used within a SearchableSelect",
     );
   }
-  return context as SearchableSelectContextType<T>;
+  return context as SearchableSelectContextType;
 };
 
-export default function SearchableSelect<T>({
-  list,
+export default function SearchableSelect({
   query: initialQuery,
   onQueryChange,
   onValueChange,
   children,
   isLoading,
 }: {
-  list: T[];
   query: string;
   onQueryChange: (query: string) => void;
   onValueChange: (value: string) => void;
@@ -65,7 +62,6 @@ export default function SearchableSelect<T>({
   return (
     <SearchableSelectContext.Provider
       value={{
-        list,
         loading: isLoading,
         query,
         handleQueryChange,
@@ -95,11 +91,15 @@ export function SearchableSelectTrigger({
 
 export function SearchableSelectContent({
   children,
+  className,
 }: {
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <PopoverContent className="p-0 w-(--radix-popover-trigger-width)">
+    <PopoverContent
+      className={cn("p-0 w-(--radix-popover-trigger-width)", className)}
+    >
       {children}
     </PopoverContent>
   );
@@ -126,24 +126,32 @@ export function SearchableSelectInput({
   );
 }
 
-export function SearchableSelectVacuum() {
-  const { list, loading } = useSearchableSelectContext();
+export function SearchableSelectVacuum({ listLength }: { listLength: number }) {
+  const { loading } = useSearchableSelectContext();
 
   if (loading) {
     return <Loader2 className="animate-spin" size={16} />;
   }
 
-  if (!list.length)
+  if (!listLength)
     return <p className="text-sm text-muted-foreground">List is Empty</p>;
 }
 
 export function SearchableSelectList({
   children,
+  className,
 }: {
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className={cn("max-h-60 overflow-y-auto p-2", "flex justify-center")}>
+    <div
+      className={cn(
+        "max-h-60 overflow-y-auto p-2",
+        "flex justify-center",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -152,15 +160,20 @@ export function SearchableSelectList({
 export function SearchableSelectItem({
   value,
   children,
+  className,
 }: {
   value: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   const { onValueChange, onOpenChange } = useSearchableSelectContext();
 
   return (
     <div
-      className="cursor-pointer rounded-sm px-2 py-1 hover:bg-accent w-full"
+      className={cn(
+        "cursor-pointer rounded-sm px-2 py-1 hover:bg-accent w-full",
+        className,
+      )}
       onClick={() => {
         onValueChange(value);
         onOpenChange?.(false);

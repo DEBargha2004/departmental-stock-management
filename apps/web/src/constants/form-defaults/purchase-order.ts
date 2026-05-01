@@ -1,4 +1,4 @@
-import type { TPurchaseOrderCreateSchema } from "@repo/contracts/purchase-order";
+import type { TPurchaseOrderCreateSchema } from "../../../../../packages/contracts/src/inventory/purchase-order";
 
 export const getDefaultPurchaseOrderCreateValues =
   (): TPurchaseOrderCreateSchema => ({

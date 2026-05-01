@@ -5,9 +5,10 @@ import type { AxiosResponse } from "axios";
 import type {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
-} from "@repo/contracts/purchase-order";
+} from "../../../../../packages/contracts/src/inventory/purchase-order";
 import { api } from "@/lib/axios";
 import { PURCHASE_ORDER_STATUS } from "@repo/contracts/status";
+import type { TProduct } from "../product/api";
 
 export type TPurchaseOrder = {
   id: number;
@@ -60,7 +61,9 @@ export async function getPurchaseOrderRequest({
   id,
 }: {
   id: number;
-}): Promise<AxiosResponse<TSuccess<TPurchaseOrder>>> {
+}): Promise<
+  AxiosResponse<TSuccess<{ order: TPurchaseOrder; list: TProduct[] }>>
+> {
   return api.get(`/inventory/purchase-order/${id}`);
 }
 

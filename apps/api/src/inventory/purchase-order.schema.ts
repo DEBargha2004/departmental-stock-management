@@ -41,13 +41,26 @@ export const purchaseOrderItems = pgTable('purchase_order_items', {
   quantity: integer('quantity').notNull(),
   unitPrice: integer('unit_price').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const stockBatch = pgTable('stock_batch', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  purchaseOrderId: integer('purchase_order_id')
+    .notNull()
+    .references(() => purchaseOrder.id),
+  batchNumber: text('batch_number').notNull(),
+  arrivalDate: date('arrival_date').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
 
-export const stockBatch = pgTable(
-  'stock_batch',
+export const stockBatchItems = pgTable(
+  'stock_batch_items',
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    batchId: integer('batch_id')
+      .notNull()
+      .references(() => stockBatch.id),
     purchaseOrderItemId: integer('purchase_order_item_id')
       .notNull()
       .references(() => purchaseOrderItems.id),

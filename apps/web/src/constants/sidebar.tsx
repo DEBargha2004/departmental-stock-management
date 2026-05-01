@@ -65,6 +65,15 @@ export const sidebarItems: TSidebarItem[] = [
     },
   },
   {
+    id: "stock-batches",
+    icon: Boxes,
+    label: "Stock Batches",
+    href: "/stock-batches",
+    isActive(path) {
+      return path === this.href;
+    },
+  },
+  {
     id: "activity-log",
     icon: ScrollText,
     label: "Activity Log",

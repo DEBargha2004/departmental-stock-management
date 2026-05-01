@@ -63,8 +63,12 @@
       "default": "./dist/query.js"
     },
     "./purchase-order": {
-      "types": "./src/purchase-order.ts",
-      "default": "./dist/purchase-order.js"
+      "types": "./src/inventory/purchase-order.ts",
+      "default": "./dist/inventory/purchase-order.js"
+    },
+    "./stock-batch": {
+      "types": "./src/inventory/stock-batch.ts",
+      "default": "./dist/inventory/stock-batch.js"
     }
   }
 }

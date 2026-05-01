@@ -1,0 +1,1 @@
+ALTER TABLE "stock_batch" ADD COLUMN "batch_number" text NOT NULL;

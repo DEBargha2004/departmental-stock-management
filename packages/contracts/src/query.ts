@@ -33,3 +33,7 @@ export type TPurchaseOrderQuery = TQuery & {
   status?: PURCHASE_ORDER_STATUS | null;
   vendorId?: number | null;
 };
+
+export type TStockBatchQuery = TQuery & {
+  vendorId?: number | null;
+};

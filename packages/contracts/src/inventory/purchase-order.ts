@@ -27,7 +27,7 @@ export const purchaseOrderCreateSchema = z
       appearances.get(id)!.push(index);
     });
 
-    appearances.forEach((indices, id) => {
+    appearances.forEach((indices) => {
       if (indices.length > 1) {
         ctx.addIssue({
           code: "custom",

@@ -46,7 +46,7 @@ export default function ControlledFormDialog<
   return (
     <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[calc(100dvh-40px)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{heading.title}</DialogTitle>
           <DialogDescription>{heading.description}</DialogDescription>

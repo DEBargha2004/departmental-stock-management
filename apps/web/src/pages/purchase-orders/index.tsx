@@ -63,6 +63,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PurchaseOrderItemList from "./_components/purchase-order-item-list";
+import type { TProduct } from "@/controllers/product/api";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -77,7 +78,7 @@ export default function PurchaseOrdersPage() {
   const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
   const activeUpdatePO = useRef<number | null>(null);
   const [activePurchaseOrderItems, setActivePurchaseOrderItems] = useState<
-    TPurchaseOrderUpdateSchema["items"]
+    TProduct[]
   >([]);
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
@@ -145,21 +146,15 @@ export default function PurchaseOrdersPage() {
     const { data } = res.data;
     if (btn && data) {
       activeUpdatePO.current = poId;
-      setActivePurchaseOrderItems(
-        data.items.map((item) => ({
-          itemId: item.id,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })),
-      );
+      setActivePurchaseOrderItems(data.list);
       btn.click();
       updateForm.reset({
-        vendorId: data.vendor.id,
-        orderDate: data.orderDate,
-        invoiceId: data.invoiceId,
-        totalAmount: data.totalAmount,
-        items: data.items.map((item) => ({
-          itemId: item.id,
+        vendorId: data.order.vendor.id,
+        orderDate: data.order.orderDate,
+        invoiceId: data.order.invoiceId,
+        totalAmount: data.order.totalAmount,
+        items: data.order.items.map((item) => ({
+          itemId: item.product.id,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),
@@ -297,7 +292,7 @@ export default function PurchaseOrdersPage() {
           <TableHeader className="bg-muted/30">
             <TableRow className="hover:bg-transparent">
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Order ID
+                Invoice ID
               </TableHead>
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Vendor
@@ -351,7 +346,7 @@ export default function PurchaseOrdersPage() {
                   key={po.id}
                 >
                   <TableCell className="font-medium py-3 text-sm">
-                    PO-{po.id.toString().padStart(5, "0")}
+                    {po.invoiceId}
                   </TableCell>
                   <TableCell className="py-3 text-sm font-medium">
                     {po.vendor.name}

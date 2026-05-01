@@ -8,9 +8,16 @@ import { VendorModule } from 'src/vendor/vendor.module';
 import { CategoryController } from './category.controller';
 import { ItemController } from './item.controller';
 import { PurchaseOrderController } from './purchase-order.controller';
+import { StockBatchController } from './stock-batch.controller';
+import { StockBatchService } from './stock-batch.service';
 
 @Module({
-  controllers: [CategoryController, ItemController, PurchaseOrderController],
+  controllers: [
+    CategoryController,
+    ItemController,
+    PurchaseOrderController,
+    StockBatchController,
+  ],
   imports: [VendorModule],
   providers: [
     ProductService,
@@ -18,6 +25,7 @@ import { PurchaseOrderController } from './purchase-order.controller';
     InventoryService,
     StockService,
     PurchaseOrderService,
+    StockBatchService,
   ],
   exports: [InventoryService, PurchaseOrderService],
 })

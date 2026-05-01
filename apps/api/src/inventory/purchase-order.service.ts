@@ -1,10 +1,19 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
 } from '@repo/contracts/purchase-order';
-import { purchaseOrder, purchaseOrderItems } from './purchase-order.schema';
+import {
+  purchaseOrder,
+  purchaseOrderItems,
+  stockBatch,
+} from './purchase-order.schema';
 import { VendorService } from 'src/vendor/vendor.service';
 import { ProductService } from './product.service';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
@@ -111,7 +120,7 @@ export class PurchaseOrderService {
     };
   }
 
-  async getPurchaseOrder(id: number): Promise<PurchaseOrder> {
+  async getPurchaseOrder(id: number) {
     const [po] = await this.db
       .select({
         id: purchaseOrder.id,
@@ -136,7 +145,9 @@ export class PurchaseOrderService {
               'name', ${product.name}
             )
           )
-        ), '[]')`.as('items'),
+        ) FILTER (WHERE ${purchaseOrderItems.id} IS NOT NULL), '[]'::JSON)`.as(
+          'items',
+        ),
       })
       .from(purchaseOrder)
       .leftJoin(
@@ -145,16 +156,14 @@ export class PurchaseOrderService {
       )
       .leftJoin(vendor, eq(vendor.id, purchaseOrder.vendorId))
       .leftJoin(product, eq(purchaseOrderItems.productId, product.id))
-      .where(
-        and(
-          eq(purchaseOrder.id, id),
-          isNull(purchaseOrder.deletedAt),
-          isNull(purchaseOrderItems.deletedAt),
-        ),
-      )
+      .where(and(eq(purchaseOrder.id, id), isNull(purchaseOrder.deletedAt)))
       .groupBy(purchaseOrder.id, vendor.id, product.name);
 
-    return po;
+    const productList = await Promise.all(
+      po.items.map((item) => this.productService.getProduct(item.product.id)),
+    );
+
+    return { order: po, list: productList };
   }
 
   async getPurchaseOrders({
@@ -188,7 +197,9 @@ export class PurchaseOrderService {
             'name', ${product.name}
           )
         )
-      ), '[]')`.as('items'),
+      ) FILTER (WHERE ${purchaseOrderItems.id} IS NOT NULL), '[]'::JSON)`.as(
+          'items',
+        ),
       })
       .from(purchaseOrder)
       .leftJoin(
@@ -200,7 +211,6 @@ export class PurchaseOrderService {
       .where(
         and(
           isNull(purchaseOrder.deletedAt),
-          isNull(purchaseOrderItems.deletedAt),
           ...(query
             ? [
                 or(
@@ -256,14 +266,116 @@ export class PurchaseOrderService {
     };
   }
 
-  async updatePurchaseOrder(id: number, payload: TPurchaseOrderUpdateSchema) {}
+  async updatePurchaseOrder(id: number, payload: TPurchaseOrderUpdateSchema) {
+    //check for existence
+    const po = await this.getPurchaseOrder(id);
+    if (!po) throw new NotFoundException('Purchase order not found');
+
+    //check for vendor
+    const vendor = await this.vendorService.getVendor(payload.vendorId);
+    if (!vendor) throw new NotFoundException('Vendor not found');
+
+    const items = await Promise.all(
+      payload.items.map((item) => this.productService.getProduct(item.itemId)),
+    );
+
+    //check for existence
+    if (items.some((it) => !it)) {
+      throw new NotFoundException('One or more items not found');
+    }
+
+    //check for if stock entry exists for the items, if yes then block update
+    //as it can lead to data inconsistency. User has to manually delete and create new PO in that case
+    const existingStockBatch = await this.getStockBatch(id);
+    if (existingStockBatch) {
+      throw new ConflictException(
+        `Cannot update purchase order as stock entry exists for this order. 
+         Please delete the existing stock entry and try again.`,
+      );
+    }
+
+    const newPo = await this.db.transaction(async (trx) => {
+      //delete existing items
+      await trx
+        .delete(purchaseOrderItems)
+        .where(eq(purchaseOrderItems.purchaseOrderId, id));
+
+      //add new items
+      await trx.insert(purchaseOrderItems).values(
+        payload.items.map((item) => ({
+          purchaseOrderId: id,
+          productId: item.itemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      );
+
+      //update po metadata
+      const [po] = await trx
+        .update(purchaseOrder)
+        .set({
+          vendorId: payload.vendorId,
+          invoiceId: payload.invoiceId,
+          orderDate: payload.orderDate,
+          totalAmount: payload.totalAmount,
+        })
+        .where(eq(purchaseOrder.id, id))
+        .returning();
+
+      return po;
+    });
+
+    return {
+      id: newPo.id,
+      invoiceId: newPo.invoiceId,
+      orderDate: newPo.orderDate,
+      status: newPo.status,
+      totalAmount: newPo.totalAmount,
+      vendor: {
+        id: vendor.id,
+        name: vendor.name,
+      },
+      items: payload.items.map((item) => {
+        const product = items.find((p) => p.id === item.itemId);
+        return {
+          id: item.itemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          product: {
+            id: product.id,
+            name: product.name,
+          },
+        };
+      }),
+    };
+  }
 
   async deletePurchaseOrder(id: number) {
+    //check for stock entry existence
+    const existingStockBatch = await this.getStockBatch(id);
+    if (existingStockBatch) {
+      throw new ConflictException(
+        `Cannot delete purchase order as stock entry exists for this order. 
+         Please delete the existing stock entry and try again.`,
+      );
+    }
+
     await this.db
       .update(purchaseOrder)
       .set({
         deletedAt: new Date(),
       })
       .where(eq(purchaseOrder.id, id));
+  }
+
+  async getStockBatch(poId: number) {
+    const [sb] = await this.db
+      .select()
+      .from(stockBatch)
+      .where(
+        and(isNull(stockBatch.deletedAt), eq(stockBatch.purchaseOrderId, poId)),
+      );
+
+    return sb;
   }
 }

@@ -12,6 +12,7 @@ import ProductsPage from "./pages/products/index";
 import VendorsPage from "./pages/vendors/index";
 import ActivityLogPage from "./pages/activity-log";
 import PurchaseOrdersPage from "./pages/purchase-orders/index";
+import StockBatchesPage from "./pages/stock-batches/index";
 
 export const router = createBrowserRouter([
   {
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
           {
             path: "/purchase-orders",
             Component: PurchaseOrdersPage,
+          },
+          {
+            path: "/stock-batches",
+            Component: StockBatchesPage,
           },
           {
             path: "/activity-log",

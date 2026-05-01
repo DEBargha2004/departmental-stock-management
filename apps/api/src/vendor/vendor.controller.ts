@@ -71,7 +71,9 @@ export class VendorController {
     return ResponseBuilder.success(res, 'Vendors fetched successfully');
   }
 
-  async getVendor(@Body('id', ParseIntPipe) id: number) {
+  @Auth('vendor.read')
+  @Get(':id')
+  async getVendor(@Param('id', ParseIntPipe) id: number) {
     const res = await this.vendorService.getVendor(id);
     return ResponseBuilder.success(res, 'Vendor fetched successfully');
   }
