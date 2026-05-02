@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { TCategoryCreateSchema } from '@repo/contracts/category';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { category } from './category.schema';
 import { TQuery } from 'src/global/types/query';
@@ -12,8 +12,9 @@ import { product } from './product.schema';
 export class CategoryService {
   constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
 
-  async createCategory(categoryDto: TCategoryCreateSchema) {
-    const [cat] = await this.db
+  async createCategory(categoryDto: TCategoryCreateSchema, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [cat] = await db
       .insert(category)
       .values({
         name: categoryDto.name,
@@ -24,8 +25,9 @@ export class CategoryService {
     return cat;
   }
 
-  async getCategory(id: number) {
-    const [cat] = await this.db
+  async getCategory(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [cat] = await db
       .select()
       .from(category)
       .where(and(isNull(category.deletedAt), eq(category.id, id)));
@@ -33,8 +35,9 @@ export class CategoryService {
     return cat;
   }
 
-  async getCategories({ query, limit = 20, page = 1, status }: TCategoryQuery) {
-    const baseQuery = this.db
+  async getCategories({ query, limit = 20, page = 1, status }: TCategoryQuery, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const baseQuery = db
       .select({
         id: category.id,
         name: category.name,
@@ -70,13 +73,13 @@ export class CategoryService {
       .groupBy(category.id)
       .as('base_query');
 
-    const selectQuery = this.db
+    const selectQuery = db
       .select()
       .from(baseQuery)
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const countQuery = this.db.select({ count: count() }).from(baseQuery);
+    const countQuery = db.select({ count: count() }).from(baseQuery);
 
     const [categories, [{ count: totalCount }]] = await Promise.all([
       selectQuery,
@@ -86,23 +89,32 @@ export class CategoryService {
     return { list: categories, count: totalCount };
   }
 
-  async updateCategory(id: number, categoryDto: TCategoryCreateSchema) {
-    const existing = await this.getCategory(id);
-    if (!existing) throw new NotFoundException('Category not available');
+  async updateCategory(id: number, categoryDto: TCategoryCreateSchema, trx?: Transaction) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const existing = await this.getCategory(id, tx);
+      if (!existing) throw new NotFoundException('Category not available');
 
-    const [cat] = await this.db
-      .update(category)
-      .set({ name: categoryDto.name, description: categoryDto.description })
-      .where(eq(category.id, id))
-      .returning();
+      const [cat] = await tx
+        .update(category)
+        .set({ name: categoryDto.name, description: categoryDto.description })
+        .where(eq(category.id, id))
+        .returning();
 
-    return cat;
+      return cat;
+    });
   }
 
-  async deleteCategory(id: number) {
-    await this.db
-      .update(category)
-      .set({ deletedAt: new Date() })
-      .where(eq(category.id, id));
+  async deleteCategory(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    await db.transaction(async (tx) => {
+      const existing = await this.getCategory(id, tx);
+      if (!existing) throw new NotFoundException('Category not available');
+
+      await tx
+        .update(category)
+        .set({ deletedAt: new Date() })
+        .where(eq(category.id, id));
+    });
   }
 }

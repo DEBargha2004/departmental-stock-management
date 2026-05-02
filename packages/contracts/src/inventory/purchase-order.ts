@@ -4,7 +4,7 @@ export const purchaseOrderCreateSchema = z
   .object({
     vendorId: z.coerce.number<number>().nonnegative(),
     invoiceId: z.string().nonempty("Invoice ID is required"),
-    orderDate: z.string().nonempty("Order date is required"),
+    orderDate: z.date().nonoptional("Order date is required"),
     totalAmount: z.coerce.number<number>().nonnegative(),
     items: z
       .array(

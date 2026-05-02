@@ -32,6 +32,7 @@ import {
   Receipt,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -70,12 +71,63 @@ export default function StockBatchCreateForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-muted/10 p-5 rounded-2xl border border-border/50">
+          <FormField
+            control={form.control}
+            name="batchNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/70 tracking-widest mb-2 flex items-center gap-2">
+                  <Hash className="h-3 w-3" />
+                  Batch Number
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="BATCH-001"
+                    className="h-11 bg-background border-border/60 focus:bg-background transition-all font-mono font-bold text-sm"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="arrivalDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/70 tracking-widest mb-2 flex items-center gap-2">
+                  <Calendar className="h-3 w-3" />
+                  Arrival Date
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
+                    {...field}
+                    value={
+                      field.value instanceof Date
+                        ? field.value.toISOString().split("T")[0]
+                        : field.value
+                    }
+                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="purchaseOrderId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">
+              <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/70 tracking-widest mb-2 flex items-center gap-2">
+                <Receipt className="h-3 w-3" />
                 PO Reference
               </FormLabel>
               <FormControl>
@@ -296,9 +348,14 @@ export default function StockBatchCreateForm({
 
         <Button
           type="submit"
+          disabled={form.formState.isSubmitting}
           className="w-full h-12 text-sm font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300"
         >
-          Receive Batch
+          {form.formState.isSubmitting ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            "Receive Batch"
+          )}
         </Button>
       </form>
     </Form>

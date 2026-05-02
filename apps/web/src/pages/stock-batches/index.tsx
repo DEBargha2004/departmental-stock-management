@@ -35,10 +35,12 @@ import {
   type TStockBatchCreateSchema,
 } from "@repo/contracts/stock-batch";
 import StockBatchCreateForm from "@/components/custom/forms/stock-batch-create";
-import { getDefaultStckBatchCreateValues } from "@/constants/form-defaults/stock-batch";
+import { getDefaultStockBatchCreateValues } from "@/constants/form-defaults/stock-batch";
 import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
 import { useGetAllStockBatchesQuery } from "@/controllers/stock-batch/query";
+import { useCreateStockBatchMutation } from "@/controllers/stock-batch/mutation";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -54,7 +56,7 @@ export default function StockBatchesPage() {
 
   const createForm = useForm<TStockBatchCreateSchema>({
     resolver: zodResolver(stockBatchCreateSchema),
-    defaultValues: getDefaultStckBatchCreateValues(),
+    defaultValues: getDefaultStockBatchCreateValues(),
   });
   const { data: vendors, isLoading: isVendorLoading } = useGetAllVendorsQuery({
     query: "",
@@ -66,10 +68,16 @@ export default function StockBatchesPage() {
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
+  const { mutateAsync: createBatch } = useCreateStockBatchMutation();
+
   const handleReceiveBatch = async (data: TStockBatchCreateSchema) => {
-    // toast.success(`Batch ${data.purchaseItems[0].} received successfully! (Mock)`);
-    console.log("Received Batch Data:", data);
-    createForm.reset();
+    try {
+      await createBatch(data);
+      toast.success(`Batch ${data.batchNumber} received successfully!`);
+      createForm.reset(getDefaultStockBatchCreateValues());
+    } catch (error) {
+      toast.error("Failed to receive batch. Please try again.");
+    }
   };
 
   const { data: sbList, isLoading } = useGetAllStockBatchesQuery({
@@ -116,6 +124,7 @@ export default function StockBatchesPage() {
             title: "Receive New Batch",
             description: "Log a new arrival of goods from a purchase order",
           }}
+          onClose={() => createForm.reset(getDefaultStockBatchCreateValues())}
         >
           <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
             <Plus className="h-4 w-4" strokeWidth={2} />

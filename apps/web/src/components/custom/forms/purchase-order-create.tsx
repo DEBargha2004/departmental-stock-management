@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { TFormProps } from "@/types/form-props";
-import type { TPurchaseOrderCreateSchema } from "../../../../../../packages/contracts/src/inventory/purchase-order";
+import type { TPurchaseOrderCreateSchema } from "@repo/contracts/purchase-order";
 import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
 import { useGetAllItemsQuery } from "@/controllers/product/query";
 import { useEffect, useRef, useState } from "react";
@@ -233,6 +233,7 @@ export default function CreatePurchaseOrderForm({
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
+                    value={field.value.toLocaleDateString()}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />

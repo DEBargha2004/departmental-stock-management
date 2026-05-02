@@ -1,5 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
 import {
   TProductUpdateSchema,
   type TProductCreateSchema,
@@ -37,8 +37,9 @@ type TStockForProduct = {
 export class ProductService {
   constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
 
-  async createProduct(payload: TProductCreateSchema) {
-    const [pr] = await this.db
+  async createProduct(payload: TProductCreateSchema, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [pr] = await db
       .insert(product)
       .values({
         name: payload.name,
@@ -51,8 +52,9 @@ export class ProductService {
     return pr;
   }
 
-  async updateProduct(id: number, payload: TProductUpdateSchema) {
-    const [pr] = await this.db
+  async updateProduct(id: number, payload: TProductUpdateSchema, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [pr] = await db
       .update(product)
       .set({
         name: payload.name,
@@ -66,8 +68,9 @@ export class ProductService {
     return pr;
   }
 
-  async getProduct(id: number) {
-    const [pr] = await this.db
+  async getProduct(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [pr] = await db
       .select({
         id: product.id,
         name: product.name,
@@ -98,8 +101,9 @@ export class ProductService {
     return pr;
   }
 
-  async getProductList(ids: number[]) {
-    const list = await this.db
+  async getProductList(ids: number[], trx?: Transaction) {
+    const db = trx ?? this.db;
+    const list = await db
       .select({
         id: product.id,
         name: product.name,
@@ -136,8 +140,9 @@ export class ProductService {
     page = 1,
     category: cat,
     status,
-  }: TProductQuery) {
-    const baseQuery = this.db
+  }: TProductQuery, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const baseQuery = db
       .select({
         id: product.id,
         name: product.name,
@@ -198,13 +203,13 @@ export class ProductService {
       )
       .as('base_query');
 
-    const selectQuery = this.db
+    const selectQuery = db
       .select()
       .from(baseQuery)
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const countQuery = this.db
+    const countQuery = db
       .select({ count: count().as('count') })
       .from(baseQuery);
 
@@ -216,10 +221,16 @@ export class ProductService {
     return { list, count: totalCount };
   }
 
-  async deleteProduct(id: number) {
-    await this.db
-      .update(product)
-      .set({ deletedAt: new Date() })
-      .where(eq(product.id, id));
+  async deleteProduct(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    await db.transaction(async (tx) => {
+      const existingProduct = await this.getProduct(id, tx);
+      if (!existingProduct) throw new NotFoundException('Item Not found');
+
+      await tx
+        .update(product)
+        .set({ deletedAt: new Date() })
+        .where(eq(product.id, id));
+    });
   }
 }

@@ -13,7 +13,6 @@ export const PURCHASE_ORDER_STATUS = {
   ORDERED: "ordered",
   RECEIVED: "received",
   CANCELLED: "cancelled",
-  PARTIALLY_RECEIVED: "partially_received",
 } as const;
 
 export const STATUS_LIST = Object.values(STATUS);
@@ -59,10 +58,6 @@ export const PURCHASE_ORDER_STATUS_FORMATTED = [
     id: "cancelled",
     label: "Cancelled",
   },
-  {
-    id: "partially_received",
-    label: "Partially Received",
-  },
 ] as const satisfies { id: PURCHASE_ORDER_STATUS; label: string }[];
 
 export const getStatusObject = (status: STATUS) => {
@@ -80,6 +75,12 @@ export const getPurchaseOrderStatusObject = (status: PURCHASE_ORDER_STATUS) => {
 export type STATUS = (typeof STATUS)[keyof typeof STATUS];
 export type PRODUCT_STATUS =
   (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
-export type MOVEMENT_TYPE = "ISSUE" | "RETURN" | "DAMAGE" | "ADJUSTMENT";
+export type MOVEMENT_TYPE =
+  | "ISSUE"
+  | "RETURN"
+  | "DAMAGE"
+  | "ADJUSTMENT"
+  | "NEW_STOCK"
+  | "STOCK_CORRECTION";
 export type PURCHASE_ORDER_STATUS =
   (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];

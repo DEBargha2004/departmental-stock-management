@@ -6,12 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatDate = (
-  date: string,
+  date: string | Date,
   options?: Intl.DateTimeFormatOptions,
 ): string => {
   const formatter = new Intl.DateTimeFormat("en-US", options);
 
-  return formatter.format(new Date(date));
+  return formatter.format(date instanceof Date ? date : new Date(date));
 };
 
 export function getImageUrl(path: string) {

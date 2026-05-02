@@ -1,7 +1,9 @@
 import type { TStockBatchCreateSchema } from "@repo/contracts/stock-batch";
 
-export const getDefaultStckBatchCreateValues = (): TStockBatchCreateSchema => ({
+export const getDefaultStockBatchCreateValues = (): TStockBatchCreateSchema => ({
+  batchNumber: "",
   purchaseOrderId: -1,
+  arrivalDate: new Date(),
   purchaseItems: [getDefaultStockBatchPurchaseItemValues()],
 });
 

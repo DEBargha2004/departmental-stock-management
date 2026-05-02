@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { stock } from './inventory.schema';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
 import { eq, inArray, max } from 'drizzle-orm';
 import { TPurchaseOrderCreateSchema } from '@repo/contracts/purchase-order';
 
@@ -8,8 +8,9 @@ import { TPurchaseOrderCreateSchema } from '@repo/contracts/purchase-order';
 export class StockService {
   constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
 
-  async getStockDetails(productId: number) {
-    const [stockDetails] = await this.db
+  async getStockDetails(productId: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [stockDetails] = await db
       .select()
       .from(stock)
       .where(eq(stock.productId, productId));
@@ -25,8 +26,9 @@ export class StockService {
     productId: number;
     quantity: number;
     minQuantity: number;
-  }) {
-    const [entry] = await this.db
+  }, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [entry] = await db
       .insert(stock)
       .values({
         productId: productId,
@@ -41,14 +43,17 @@ export class StockService {
   async updateStockMetadata(
     productId: number,
     { minQuantity }: { minQuantity: number },
+    trx?: Transaction
   ) {
-    await this.db
+    const db = trx ?? this.db;
+    await db
       .update(stock)
       .set({ minStockLevel: minQuantity })
       .where(eq(stock.productId, productId));
   }
 
-  async deleteStockEntry(productId: number) {
-    await this.db.delete(stock).where(eq(stock.productId, productId));
+  async deleteStockEntry(productId: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    await db.delete(stock).where(eq(stock.productId, productId));
   }
 }

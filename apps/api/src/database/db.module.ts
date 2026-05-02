@@ -6,6 +6,7 @@ import { TConfig } from 'src/lib/config';
 
 export const DATABASE_MODULE = Symbol('DATABASE_MODULE');
 export type TDB = NodePgDatabase;
+export type Transaction = Parameters<Parameters<TDB['transaction']>[0]>[0];
 
 @Global()
 @Module({

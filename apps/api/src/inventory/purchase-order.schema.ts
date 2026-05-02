@@ -23,7 +23,7 @@ export const purchaseOrder = pgTable('purchase_order', {
     .$type<PURCHASE_ORDER_STATUS>()
     .notNull()
     .default('ordered'),
-  orderDate: date('order_date').notNull(),
+  orderDate: timestamp('order_date', { mode: 'date' }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
@@ -49,7 +49,7 @@ export const stockBatch = pgTable('stock_batch', {
     .notNull()
     .references(() => purchaseOrder.id),
   batchNumber: text('batch_number').notNull(),
-  arrivalDate: date('arrival_date').notNull(),
+  arrivalDate: timestamp('arrival_date', { mode: 'date' }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });

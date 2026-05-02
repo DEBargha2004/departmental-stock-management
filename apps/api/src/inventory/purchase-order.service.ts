@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import { DATABASE_MODULE, Transaction, type TDB } from 'src/database/db.module';
 import {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
@@ -21,11 +21,12 @@ import { vendor } from 'src/vendor/vendor.schema';
 import { product } from './product.schema';
 import { TPurchaseOrderQuery } from '@repo/contracts/query';
 import { PURCHASE_ORDER_STATUS } from '@repo/contracts/status';
+import { PgTransaction } from 'drizzle-orm/pg-core';
 
 type PurchaseOrder = {
   id: number;
   invoiceId: string;
-  orderDate: string;
+  orderDate: Date;
   status: PURCHASE_ORDER_STATUS;
   totalAmount: number;
   vendor: {
@@ -55,22 +56,25 @@ export class PurchaseOrderService {
 
   async createPurchaseOrder(
     payload: TPurchaseOrderCreateSchema,
+    trx?: Transaction
   ): Promise<PurchaseOrder> {
-    //check for vendor
-    const vendor = await this.vendorService.getVendor(payload.vendorId);
-    if (!vendor) throw new NotFoundException('Vendor not found');
+    const db = trx ?? this.db;
+    
+    const po = await db.transaction(async (tx) => {
+      //check for vendor
+      const vendor = await this.vendorService.getVendor(payload.vendorId);
+      if (!vendor) throw new NotFoundException('Vendor not found');
 
-    const items = await Promise.all(
-      payload.items.map((item) => this.productService.getProduct(item.itemId)),
-    );
+      const items = await Promise.all(
+        payload.items.map((item) => this.productService.getProduct(item.itemId, tx)),
+      );
 
-    //check for existence
-    if (items.some((it) => !it)) {
-      throw new NotFoundException('One or more items not found');
-    }
+      //check for existence
+      if (items.some((it) => !it)) {
+        throw new NotFoundException('One or more items not found');
+      }
 
-    const po = await this.db.transaction(async (trx) => {
-      const [entry] = await trx
+      const [entry] = await tx
         .insert(purchaseOrder)
         .values({
           vendorId: payload.vendorId,
@@ -80,7 +84,7 @@ export class PurchaseOrderService {
         })
         .returning();
 
-      const items = await trx
+      const poItems = await tx
         .insert(purchaseOrderItems)
         .values(
           payload.items.map((item) => ({
@@ -92,7 +96,7 @@ export class PurchaseOrderService {
         )
         .returning();
 
-      return { entry, items };
+      return { entry, items: poItems, vendor, productDetails: items };
     });
 
     return {
@@ -102,26 +106,29 @@ export class PurchaseOrderService {
       status: po.entry.status,
       totalAmount: po.entry.totalAmount,
       vendor: {
-        id: vendor.id,
-        name: vendor.name,
+        id: po.vendor.id,
+        name: po.vendor.name,
       },
       items: po.items.map((poItem) => {
-        const product = items.find((p) => p.id === poItem.productId);
+        const product = po.productDetails.find((p) => p!.id === poItem.productId);
         return {
           id: poItem.id,
           quantity: poItem.quantity,
           unitPrice: poItem.unitPrice,
           product: {
-            id: product.id,
-            name: product.name,
+            id: product!.id,
+            name: product!.name,
           },
         };
       }),
     };
   }
 
-  async getPurchaseOrder(id: number) {
-    const [po] = await this.db
+
+
+  async getPurchaseOrder(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [po] = await db
       .select({
         id: purchaseOrder.id,
         invoiceId: purchaseOrder.invoiceId,
@@ -159,6 +166,10 @@ export class PurchaseOrderService {
       .where(and(eq(purchaseOrder.id, id), isNull(purchaseOrder.deletedAt)))
       .groupBy(purchaseOrder.id, vendor.id, product.name);
 
+    if (!po) {
+      throw new NotFoundException(`Purchase order with id ${id} not found`);
+    }
+
     const productList = await Promise.all(
       po.items.map((item) => this.productService.getProduct(item.product.id)),
     );
@@ -172,8 +183,9 @@ export class PurchaseOrderService {
     page = 1,
     status,
     vendorId,
-  }: TPurchaseOrderQuery) {
-    const baseQuery = this.db
+  }: TPurchaseOrderQuery, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const baseQuery = db
       .select({
         id: purchaseOrder.id,
         invoiceId: purchaseOrder.invoiceId,
@@ -243,13 +255,13 @@ export class PurchaseOrderService {
       )
       .as('base_query');
 
-    const selectQuery = this.db
+    const selectQuery = db
       .select()
       .from(baseQuery)
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const countQuery = this.db
+    const countQuery = db
       .select({
         count: count(),
       })
@@ -266,42 +278,44 @@ export class PurchaseOrderService {
     };
   }
 
-  async updatePurchaseOrder(id: number, payload: TPurchaseOrderUpdateSchema) {
-    //check for existence
-    const po = await this.getPurchaseOrder(id);
-    if (!po) throw new NotFoundException('Purchase order not found');
+  async updatePurchaseOrder(id: number, payload: TPurchaseOrderUpdateSchema, trx?: Transaction) {
+    const db = trx ?? this.db;
 
-    //check for vendor
-    const vendor = await this.vendorService.getVendor(payload.vendorId);
-    if (!vendor) throw new NotFoundException('Vendor not found');
+    const newPo = await db.transaction(async (tx) => {
+      //check for existence
+      const po = await this.getPurchaseOrder(id, tx);
+      if (!po) throw new NotFoundException('Purchase order not found');
 
-    const items = await Promise.all(
-      payload.items.map((item) => this.productService.getProduct(item.itemId)),
-    );
+      //check for vendor
+      const vendor = await this.vendorService.getVendor(payload.vendorId);
+      if (!vendor) throw new NotFoundException('Vendor not found');
 
-    //check for existence
-    if (items.some((it) => !it)) {
-      throw new NotFoundException('One or more items not found');
-    }
-
-    //check for if stock entry exists for the items, if yes then block update
-    //as it can lead to data inconsistency. User has to manually delete and create new PO in that case
-    const existingStockBatch = await this.getStockBatch(id);
-    if (existingStockBatch) {
-      throw new ConflictException(
-        `Cannot update purchase order as stock entry exists for this order. 
-         Please delete the existing stock entry and try again.`,
+      const items = await Promise.all(
+        payload.items.map((item) => this.productService.getProduct(item.itemId, tx)),
       );
-    }
 
-    const newPo = await this.db.transaction(async (trx) => {
+      //check for existence
+      if (items.some((it) => !it)) {
+        throw new NotFoundException('One or more items not found');
+      }
+
+      //check for if stock entry exists for the items, if yes then block update
+      //as it can lead to data inconsistency. User has to manually delete and create new PO in that case
+      const existingStockBatch = await this.getStockBatch(id, tx);
+      if (existingStockBatch) {
+        throw new ConflictException(
+          `Cannot update purchase order as stock entry exists for this order. 
+           Please delete the existing stock entry and try again.`,
+        );
+      }
+
       //delete existing items
-      await trx
+      await tx
         .delete(purchaseOrderItems)
         .where(eq(purchaseOrderItems.purchaseOrderId, id));
 
       //add new items
-      await trx.insert(purchaseOrderItems).values(
+      await tx.insert(purchaseOrderItems).values(
         payload.items.map((item) => ({
           purchaseOrderId: id,
           productId: item.itemId,
@@ -311,7 +325,7 @@ export class PurchaseOrderService {
       );
 
       //update po metadata
-      const [po] = await trx
+      const [updatedPo] = await tx
         .update(purchaseOrder)
         .set({
           vendorId: payload.vendorId,
@@ -322,54 +336,85 @@ export class PurchaseOrderService {
         .where(eq(purchaseOrder.id, id))
         .returning();
 
-      return po;
+      return { po: updatedPo, vendor, items };
     });
 
     return {
-      id: newPo.id,
-      invoiceId: newPo.invoiceId,
-      orderDate: newPo.orderDate,
-      status: newPo.status,
-      totalAmount: newPo.totalAmount,
+      id: newPo.po.id,
+      invoiceId: newPo.po.invoiceId,
+      orderDate: newPo.po.orderDate,
+      status: newPo.po.status,
+      totalAmount: newPo.po.totalAmount,
       vendor: {
-        id: vendor.id,
-        name: vendor.name,
+        id: newPo.vendor.id,
+        name: newPo.vendor.name,
       },
       items: payload.items.map((item) => {
-        const product = items.find((p) => p.id === item.itemId);
+        const product = newPo.items.find((p) => p!.id === item.itemId);
         return {
           id: item.itemId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           product: {
-            id: product.id,
-            name: product.name,
+            id: product!.id,
+            name: product!.name,
           },
         };
       }),
     };
   }
 
-  async deletePurchaseOrder(id: number) {
-    //check for stock entry existence
-    const existingStockBatch = await this.getStockBatch(id);
-    if (existingStockBatch) {
-      throw new ConflictException(
-        `Cannot delete purchase order as stock entry exists for this order. 
-         Please delete the existing stock entry and try again.`,
-      );
-    }
 
-    await this.db
-      .update(purchaseOrder)
-      .set({
-        deletedAt: new Date(),
-      })
-      .where(eq(purchaseOrder.id, id));
+
+  async updatePurchaseOrderStatus(
+    id: number,
+    status: PURCHASE_ORDER_STATUS,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+    await db.transaction(async (tx) => {
+      const res = await tx
+        .update(purchaseOrder)
+        .set({
+          status,
+        })
+        .where(and(eq(purchaseOrder.id, id), isNull(purchaseOrder.deletedAt)));
+
+      if (!res.rowCount) {
+        throw new NotFoundException(`Purchase order with id ${id} not found`);
+      }
+    });
   }
 
-  async getStockBatch(poId: number) {
-    const [sb] = await this.db
+  async deletePurchaseOrder(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    
+    await db.transaction(async (tx) => {
+      //check for stock entry existence
+      const existingStockBatch = await this.getStockBatch(id, tx);
+      if (existingStockBatch) {
+        throw new ConflictException(
+          `Cannot delete purchase order as stock entry exists for this order. 
+           Please delete the existing stock entry and try again.`,
+        );
+      }
+
+      const res = await tx
+        .update(purchaseOrder)
+        .set({
+          deletedAt: new Date(),
+        })
+        .where(eq(purchaseOrder.id, id));
+
+      if (!res.rowCount) {
+        throw new NotFoundException(`Purchase order with id ${id} not found`);
+      }
+    });
+  }
+
+  async getStockBatch(poId: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [sb] = await db
       .select()
       .from(stockBatch)
       .where(

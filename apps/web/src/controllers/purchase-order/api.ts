@@ -5,7 +5,7 @@ import type { AxiosResponse } from "axios";
 import type {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
-} from "../../../../../packages/contracts/src/inventory/purchase-order";
+} from "@repo/contracts/purchase-order";
 import { api } from "@/lib/axios";
 import { PURCHASE_ORDER_STATUS } from "@repo/contracts/status";
 import type { TProduct } from "../product/api";
@@ -13,7 +13,7 @@ import type { TProduct } from "../product/api";
 export type TPurchaseOrder = {
   id: number;
   invoiceId: string;
-  orderDate: string;
+  orderDate: Date;
   status: PURCHASE_ORDER_STATUS;
   totalAmount: number;
   vendor: {

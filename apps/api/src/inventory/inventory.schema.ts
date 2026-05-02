@@ -75,6 +75,8 @@ export const stockMovement = pgTable('stock_movement', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export type TDBStockMovement = typeof stockMovement.$inferInsert;
+
 export * from './category.schema';
 export * from './product.schema';
 export * from './purchase-order.schema';
