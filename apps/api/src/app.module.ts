@@ -14,6 +14,8 @@ import { InventoryModule } from './inventory/inventory.module';
 import { VendorModule } from './vendor/vendor.module';
 import { StockProcurementModule } from './stock-procurement/stock-procurement.module';
 import { RouterModule } from '@nestjs/core';
+import { AuditController } from './audit/audit.controller';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -38,6 +40,7 @@ import { RouterModule } from '@nestjs/core';
         module: InventoryModule,
       },
     ]),
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeederService],

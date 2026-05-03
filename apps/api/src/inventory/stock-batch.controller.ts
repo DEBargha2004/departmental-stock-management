@@ -17,10 +17,16 @@ import {
   type TStockBatchCreateSchema,
 } from '@repo/contracts/stock-batch';
 import { ResponseBuilder } from 'src/lib/response';
+import { InventoryService } from './inventory.service';
+import { CurrentUser } from 'src/user/user.decorator';
+import type { TJWTPayload } from 'src/authentication/auth.service';
 
 @Controller('stock-batch')
 export class StockBatchController {
-  constructor(private readonly stockBatchService: StockBatchService) {}
+  constructor(
+    private readonly stockBatchService: StockBatchService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   @Auth('stock-batch.read')
   @Get(':id')
@@ -53,7 +59,12 @@ export class StockBatchController {
   async createStockBatch(
     @Body(new ZodValidationPipe(stockBatchCreateSchema))
     data: TStockBatchCreateSchema,
-  ) {}
+    @CurrentUser() user: TJWTPayload,
+  ) {
+    await this.inventoryService.createStockBatch(data, user);
+
+    return ResponseBuilder.success(null, 'Stock batch created successfully');
+  }
 
   @Auth('stock-batch.update')
   @Patch(':id')
@@ -61,9 +72,19 @@ export class StockBatchController {
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(stockBatchCreateSchema))
     data: TStockBatchCreateSchema,
-  ) {}
+    @CurrentUser() user: TJWTPayload,
+  ) {
+    await this.inventoryService.updateStockBatch(id, data, user);
 
-  @Auth('stock-batch.delete')
-  @Delete(':id')
-  async deleteStockBatch(@Param('id', ParseIntPipe) id: number) {}
+    return ResponseBuilder.success(null, 'Stock batch updated successfully');
+  }
+
+  async deleteStockBatch(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: TJWTPayload,
+  ) {
+    await this.inventoryService.deleteStockBatch(id, user);
+
+    return ResponseBuilder.success(null, 'Stock batch deleted successfully');
+  }
 }

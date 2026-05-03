@@ -46,6 +46,7 @@ export default function StockBatchCreateForm({
     query,
     page: 1,
     limit: 50, // Increased limit for better selection
+    status: "ordered",
   });
   const poDataList = purchaseOrders?.data.data?.list ?? [];
   const poId = useWatch({ control: form.control, name: "purchaseOrderId" });
@@ -309,8 +310,9 @@ export default function StockBatchCreateForm({
                       />
 
                       <div className="pb-0.5 shrink-0">
-                        {form.watch(`purchaseItems.${index}.quantityReceived`) ===
-                        poItem?.quantity ? (
+                        {form.watch(
+                          `purchaseItems.${index}.quantityReceived`,
+                        ) === poItem?.quantity ? (
                           <div
                             className="h-11 w-11 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center animate-in zoom-in duration-300"
                             title="Full quantity receiving"

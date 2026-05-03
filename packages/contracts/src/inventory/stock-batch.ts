@@ -3,7 +3,7 @@ import z from "zod";
 export const stockBatchCreateSchema = z.object({
   batchNumber: z.string(),
   purchaseOrderId: z.number(),
-  arrivalDate: z.date(),
+  arrivalDate: z.coerce.date<Date>(),
   purchaseItems: z.array(
     z.object({
       purchaseItemId: z.number(),

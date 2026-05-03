@@ -336,15 +336,17 @@ export default function CategoriesPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={6}
-                  className="h-32 text-center text-sm text-muted-foreground border-input/40"
+                  colSpan={5}
+                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
                 >
-                  <div className="flex flex-col items-center justify-center space-y-1">
-                    <Search
-                      className="h-6 w-6 text-muted-foreground/50 mb-2"
-                      strokeWidth={1.5}
-                    />
-                    <p>No categories found matching your criteria</p>
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                      <Search className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <p className="font-medium text-foreground">
+                      No categories found
+                    </p>
+                    <p>Try adjusting your search or filters</p>
                   </div>
                 </TableCell>
               </TableRow>

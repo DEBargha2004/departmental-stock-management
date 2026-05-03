@@ -38,7 +38,7 @@ export type TStockBatchItem = {
 
 export async function createStockBatchRequest(
   data: TStockBatchCreateSchema,
-): Promise<AxiosResponse<TSuccess<TStockBatch>>> {
+): Promise<AxiosResponse<TSuccess<null>>> {
   return api.post("/inventory/stock-batch", data);
 }
 
@@ -48,7 +48,7 @@ export async function updateStockBatchRequest({
 }: {
   id: number;
   payload: TStockBatchUpdateSchema;
-}): Promise<AxiosResponse<TSuccess<TStockBatch>>> {
+}): Promise<AxiosResponse<TSuccess<null>>> {
   return api.patch(`/inventory/stock-batch/${id}`, payload);
 }
 

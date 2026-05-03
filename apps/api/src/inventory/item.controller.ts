@@ -20,6 +20,8 @@ import {
 } from '@repo/contracts/item';
 import { ResponseBuilder } from 'src/lib/response';
 import { PRODUCT_STATUS } from '@repo/contracts/status';
+import { CurrentUser } from 'src/user/user.decorator';
+import type { TJWTPayload } from 'src/authentication/auth.service';
 
 @Controller('item')
 export class ItemController {
@@ -30,8 +32,9 @@ export class ItemController {
   async createItem(
     @Body(new ZodValidationPipe(productCreateSchema))
     productDto: TProductCreateSchema,
+    @CurrentUser() user: TJWTPayload,
   ) {
-    const res = await this.inventoryService.createItem(productDto);
+    const res = await this.inventoryService.createItem(productDto, user);
 
     return ResponseBuilder.success(res, 'Item created successfully');
   }
@@ -70,16 +73,20 @@ export class ItemController {
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(productUpdateSchema))
     productDto: TProductUpdateSchema,
+    @CurrentUser() user: TJWTPayload,
   ) {
-    const res = await this.inventoryService.updateItem(id, productDto);
+    const res = await this.inventoryService.updateItem(id, productDto, user);
 
     return ResponseBuilder.success(res, 'Item updated successfully');
   }
 
   @Auth('product.delete')
   @Delete(':id')
-  async deleteItem(@Param('id', ParseIntPipe) id: number) {
-    await this.inventoryService.deleteItem(id);
+  async deleteItem(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: TJWTPayload,
+  ) {
+    await this.inventoryService.deleteItem(id, user);
 
     return ResponseBuilder.success(null, 'Item deleted successfully');
   }

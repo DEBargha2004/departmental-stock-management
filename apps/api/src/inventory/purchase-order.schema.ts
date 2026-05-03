@@ -51,7 +51,6 @@ export const stockBatch = pgTable('stock_batch', {
   batchNumber: text('batch_number').notNull(),
   arrivalDate: timestamp('arrival_date', { mode: 'date' }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  deletedAt: timestamp('deleted_at'),
 });
 
 export const stockBatchItems = pgTable(

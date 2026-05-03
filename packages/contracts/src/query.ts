@@ -1,5 +1,7 @@
 import type { Role } from "./auth/roles.js";
 import type {
+  AUDIT_ACTION,
+  ENTITY_TYPE,
   PRODUCT_STATUS,
   PURCHASE_ORDER_STATUS,
   STATUS,
@@ -36,4 +38,9 @@ export type TPurchaseOrderQuery = TQuery & {
 
 export type TStockBatchQuery = TQuery & {
   vendorId?: number | null;
+};
+
+export type TAuditLogQuery = TQuery & {
+  action?: AUDIT_ACTION | null;
+  entity?: ENTITY_TYPE | null;
 };

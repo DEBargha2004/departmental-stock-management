@@ -1,3 +1,4 @@
+import type { AUDIT_ACTION, ENTITY_TYPE } from '@repo/contracts/status';
 import { integer } from 'drizzle-orm/pg-core';
 import { jsonb } from 'drizzle-orm/pg-core';
 import { timestamp } from 'drizzle-orm/pg-core';
@@ -11,9 +12,12 @@ export const auditLog = pgTable('audit_log', {
     .notNull()
     .references(() => user.id),
 
-  action: text('action').notNull(),
-  entityType: text('entity_type').notNull(),
+  action: text('action').$type<AUDIT_ACTION>().notNull(),
+  description: text('description'),
+  entityType: text('entity_type').$type<ENTITY_TYPE>().notNull(),
   entityId: integer('entity_id').notNull(),
   eventData: jsonb('event_data'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export type TDBAuditLog = typeof auditLog.$inferInsert;

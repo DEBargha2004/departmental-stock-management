@@ -37,6 +37,8 @@ export const PERMISSIONS = {
   STOCK_BATCH_READ: 'stock-batch.read',
   STOCK_BATCH_UPDATE: 'stock-batch.update',
   STOCK_BATCH_DELETE: 'stock-batch.delete',
+
+  AUDIT_READ: 'audit.read',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

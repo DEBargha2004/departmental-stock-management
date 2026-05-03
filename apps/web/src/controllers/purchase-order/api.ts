@@ -35,7 +35,7 @@ export type TPurchaseOrderItem = {
 
 export async function createPurchaseOrderRequest(
   data: TPurchaseOrderCreateSchema,
-): Promise<AxiosResponse<TSuccess<TPurchaseOrder>>> {
+): Promise<AxiosResponse<TSuccess<null>>> {
   return api.post("/inventory/purchase-order/create", data);
 }
 
@@ -45,7 +45,7 @@ export async function updatePurchaseOrderRequest({
 }: {
   id: number;
   payload: TPurchaseOrderUpdateSchema;
-}): Promise<AxiosResponse<TSuccess<TPurchaseOrder>>> {
+}): Promise<AxiosResponse<TSuccess<null>>> {
   return api.patch(`/inventory/purchase-order/${id}`, payload);
 }
 

@@ -53,7 +53,7 @@ export const stock = pgTable(
       .notNull()
       .references(() => product.id),
 
-    minStockLevel: integer('min_stock_level'),
+    minStockLevel: integer('min_stock_level').notNull().default(0),
     quantityAvailable: integer('quantity_available').notNull().default(0),
     quantityIssued: integer('quantity_issued').notNull().default(0),
     quantityDamaged: integer('quantity_damaged').notNull().default(0),
@@ -76,6 +76,7 @@ export const stockMovement = pgTable('stock_movement', {
 });
 
 export type TDBStockMovement = typeof stockMovement.$inferInsert;
+export type TDBStock = typeof stock.$inferInsert;
 
 export * from './category.schema';
 export * from './product.schema';

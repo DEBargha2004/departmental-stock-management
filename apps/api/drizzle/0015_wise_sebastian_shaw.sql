@@ -1,0 +1,1 @@
+ALTER TABLE "stock_batch" DROP COLUMN "deleted_at";

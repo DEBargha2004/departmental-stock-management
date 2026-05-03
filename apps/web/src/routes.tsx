@@ -10,7 +10,7 @@ import UsersPage from "./pages/users/index";
 import CategoriesPage from "./pages/categories";
 import ProductsPage from "./pages/products/index";
 import VendorsPage from "./pages/vendors/index";
-import ActivityLogPage from "./pages/activity-log";
+import ActivityLogPage from "./pages/activity-log/index";
 import PurchaseOrdersPage from "./pages/purchase-orders/index";
 import StockBatchesPage from "./pages/stock-batches/index";
 

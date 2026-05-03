@@ -76,7 +76,10 @@ export default function StockBatchesPage() {
       toast.success(`Batch ${data.batchNumber} received successfully!`);
       createForm.reset(getDefaultStockBatchCreateValues());
     } catch (error) {
-      toast.error("Failed to receive batch. Please try again.");
+      toast.error(
+        (error as Error)?.message ??
+          "Failed to Create Stock Batch. Please try again.",
+      );
     }
   };
 
@@ -260,15 +263,17 @@ export default function StockBatchesPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
-                  className="h-32 text-center text-sm text-muted-foreground border-input/40"
+                  colSpan={5}
+                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
                 >
-                  <div className="flex flex-col items-center justify-center space-y-1">
-                    <Package
-                      className="h-6 w-6 text-muted-foreground/50 mb-2"
-                      strokeWidth={1.5}
-                    />
-                    <p>No stock batches found</p>
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                      <Package className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <p className="font-medium text-foreground">
+                      No stock batches found
+                    </p>
+                    <p>Try adjusting your search or filters</p>
                   </div>
                 </TableCell>
               </TableRow>
