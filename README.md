@@ -1,135 +1,141 @@
-# Turborepo starter
+# Departmental Stock Management System
 
-This Turborepo starter is maintained by the Turborepo core team.
+A comprehensive, high-performance monorepo application for managing departmental inventory, procurement, and stock fulfillment.
 
-## Using this example
+## 🚀 Overview
 
-Run the following command:
+This system is designed to streamline the lifecycle of inventory management—from issuing Purchase Orders to vendors, to receiving Stock Batches, and tracking real-time stock levels with a full audit trail. It features a premium React frontend and a robust NestJS backend, ensuring type safety and scalability through a shared contract architecture.
 
-```sh
-npx create-turbo@latest
+### ✨ Core Features
+- **Inventory Management**: Track products, categories, and real-time stock levels.
+- **Procurement Workflow**: Manage Vendors and full lifecycle of Purchase Orders.
+- **Stock Batch Tracking**: Log incoming goods from purchase orders with partial/full receipt support.
+- **Audit Logging**: Comprehensive tracking of all mutation actions (Create/Update/Delete).
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions for different administrative roles.
+- **Asset Management**: Integrated Minio/S3 support for product images and documents.
+
+---
+
+## 🛠 Technology Stack
+
+- **Monorepo**: Turborepo + pnpm
+- **Backend**: NestJS, Drizzle ORM, PostgreSQL
+- **Frontend**: React (Vite), TailwindCSS, React Query, Radix UI
+- **Contracts**: Zod (Shared schemas & types)
+- **Infrastructure**: Docker, Minio (Object Storage)
+
+---
+
+## 📋 Prerequisites
+
+Ensure you have the following installed:
+- **Node.js**: v18 or later
+- **pnpm**: v8 or later
+- **Docker & Docker Compose**: For database and object storage
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd departmental-stock-management
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+### 2. Install Dependencies
+```bash
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+### 3. Spin up Infrastructure
+Start the PostgreSQL and Minio containers:
+```bash
+docker compose up -d
 ```
 
-### Develop
+### 4. Configure Object Storage (Minio)
+Before proceeding, access the Minio Console at [http://localhost:9001](http://localhost:9001):
+1.  **Login**: Default credentials are `minioadmin` / `minioadmin`.
+2.  **Create Bucket**: Create a bucket (e.g., `stockify`).
+3.  **Create Access Key**: Generate an Access Key and Secret Key for the application to use.
 
-To develop all apps and packages, run the following command:
+### 5. Setup Environment Variables
 
-```
-cd my-turborepo
+Create `.env` files in both `apps/api` and `apps/web`.
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+#### Backend (`apps/api/.env`)
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_db
+PORT=4000
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=3600
+FRONTEND_URL=http://localhost:5173
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+# Initial Admin Setup
+ADMIN_NAME=Admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_password
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Object Storage (Minio)
+# Note: You must create the bucket and access keys in the Minio Console (http://localhost:9001) first.
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_REGION=us-east-1
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_BUCKET=stockify
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+#### Frontend (`apps/web/.env`)
+```env
+VITE_API_URL=http://localhost:4000
+VITE_S3_URL=http://localhost:9000/stockify
 ```
 
-## Useful Links
+### 5. Database Setup
+Run migrations and seed the database:
+```bash
+# In apps/api
+pnpm run db:push
+pnpm run seed # If a seed script is available
+```
 
-Learn more about the power of Turborepo:
+---
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## 🏃‍♂️ Running the Application
+
+Start the development servers for both apps:
+```bash
+pnpm dev
+```
+- **Frontend**: [http://localhost:5173](http://localhost:5173)
+- **Backend API**: [http://localhost:4000](http://localhost:4000)
+
+---
+
+## 🏗 Project Structure
+
+```text
+├── apps
+│   ├── api          # NestJS Backend
+│   └── web          # React Frontend
+├── packages
+│   ├── contracts    # Shared Zod schemas & types
+│   ├── ui           # Shared UI components
+│   ├── eslint-config
+│   └── typescript-config
+├── docker-compose.yaml
+└── turbo.json
+```
+
+---
+
+## 🛡 Security & Audit
+The system implements a centralized audit logging service. Every mutation (Create, Update, Delete) is recorded with:
+- Actor (User ID)
+- Action Type
+- Entity Reference
+- Timestamp
+- Change Description
+
+Access is controlled via fine-grained permissions using the `@Auth` decorator on API endpoints.
