@@ -5,7 +5,6 @@ export const MODULE = {
   PRODUCTS: "products",
   VENDORS: "vendors",
   PURCHASE_ORDERS: "purchase_orders",
-  STOCK: "stock",
   STOCK_BATCHES: "stock_batches",
   ACTIVITY_LOG: "activity_log",
 } as const;
