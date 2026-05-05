@@ -72,30 +72,29 @@ export class StockService {
     const db = trx ?? this.db;
 
     const values = props.map(
-      (i) => sql`
-      (
-        ${i.productId},
-        ${i.payload.minStockLevel ?? null},
-        ${i.payload.quantityAvailable ?? null},
-        ${i.payload.quantityDamaged ?? null},
-        ${i.payload.quantityIssued ?? null}
-      )`,
+      (i) => sql`(
+      ${i.productId}::integer,
+      ${i.payload.minStockLevel ?? null}::integer,
+      ${i.payload.quantityAvailable ?? null}::integer,
+      ${i.payload.quantityDamaged ?? null}::integer,
+      ${i.payload.quantityIssued ?? null}::integer
+    )`,
     );
 
     if (!values.length) return;
 
     await db.execute(sql`
-      UPDATE ${stock}
-      SET
-        ${stock.minStockLevel} = COALESCE(v.min_stock_level, ${stock.minStockLevel}),
-        ${stock.quantityAvailable} = COALESCE(v.quantity_available, ${stock.quantityAvailable}),
-        ${stock.quantityDamaged} = COALESCE(v.quantity_damaged, ${stock.quantityDamaged}),
-        ${stock.quantityIssued} = COALESCE(v.quantity_issued, ${stock.quantityIssued})
-      FROM (
-        VALUES ${sql.join(values, sql`, `)}
-      ) AS v(product_id, min_stock_level, quantity_available, quantity_damaged, quantity_issued)
-      WHERE ${stock.productId} = v.product_id
-    `);
+    UPDATE ${stock}
+    SET
+      ${sql.raw(stock.minStockLevel.name)}     = COALESCE(v.min_stock_level,      ${stock.minStockLevel}),
+      ${sql.raw(stock.quantityAvailable.name)} = COALESCE(v.quantity_available,   ${stock.quantityAvailable}),
+      ${sql.raw(stock.quantityDamaged.name)}   = COALESCE(v.quantity_damaged,     ${stock.quantityDamaged}),
+      ${sql.raw(stock.quantityIssued.name)}    = COALESCE(v.quantity_issued,      ${stock.quantityIssued})
+    FROM (
+      VALUES ${sql.join(values, sql`, `)}
+    ) AS v(product_id, min_stock_level, quantity_available, quantity_damaged, quantity_issued)
+    WHERE ${stock.productId} = v.product_id
+  `);
   }
 
   async deleteStockEntry(productId: number, trx?: Transaction) {

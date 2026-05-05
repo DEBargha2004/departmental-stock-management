@@ -10,6 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,9 +45,15 @@ import StockBatchCreateForm from "@/components/custom/forms/stock-batch-create";
 import { getDefaultStockBatchCreateValues } from "@/constants/form-defaults/stock-batch";
 import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
 import { useGetAllStockBatchesQuery } from "@/controllers/stock-batch/query";
-import { useCreateStockBatchMutation } from "@/controllers/stock-batch/mutation";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import WarningDialog from "@/components/custom/warning-dialog";
+import { catchError } from "@/lib/catch-error";
+import {
+  useCreateStockBatchMutation,
+  useDeleteStockBatchMutation,
+} from "@/controllers/stock-batch/mutation";
+import StockBatchItemList from "./_components/stock-batch-item-list";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -69,24 +82,21 @@ export default function StockBatchesPage() {
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
   const { mutateAsync: createBatch } = useCreateStockBatchMutation();
+  const { mutateAsync: deleteBatch } = useDeleteStockBatchMutation();
 
   const handleReceiveBatch = async (data: TStockBatchCreateSchema) => {
-    try {
-      await createBatch(data);
-      toast.success(`Batch ${data.batchNumber} received successfully!`);
-      createForm.reset(getDefaultStockBatchCreateValues());
-    } catch (error) {
-      toast.error(
-        (error as Error)?.message ??
-          "Failed to Create Stock Batch. Please try again.",
-      );
-    }
+    await catchError(createBatch(data));
+    createForm.reset(getDefaultStockBatchCreateValues());
+  };
+
+  const handleDeleteBatch = async (id: number) => {
+    await catchError(deleteBatch({ id }));
   };
 
   const { data: sbList, isLoading } = useGetAllStockBatchesQuery({
     query: debouncedQuery,
-    limit: 500,
-    page: 1,
+    limit: searchParams.limit,
+    page: searchParams.page,
     vendorId: searchParams.vendorId !== -1 ? searchParams.vendorId : undefined,
   });
   const dataList = sbList?.data.data;
@@ -159,7 +169,7 @@ export default function StockBatchesPage() {
             disabled={isVendorLoading}
           >
             <SelectTrigger className="h-9 w-full sm:w-[150px] bg-transparent border-input/60 hover:border-input focus:border-ring transition-colors rounded-lg shadow-sm">
-              <SelectValue placeholder="STATUS" />
+              <SelectValue placeholder="Vendor" />
             </SelectTrigger>
             <SelectContent position="popper">
               <SelectItem value="-1">All Vendors</SelectItem>
@@ -218,7 +228,10 @@ export default function StockBatchesPage() {
               ))
             ) : (dataList?.count ?? 0) > 0 ? (
               dataList?.list.map((sb) => (
-                <TableRow className="group hover:bg-muted/40 transition-colors border-input/40">
+                <TableRow
+                  key={sb.id}
+                  className="group hover:bg-muted/40 transition-colors border-input/40"
+                >
                   <TableCell className="font-medium py-3 text-sm">
                     {sb.batchNumber}
                   </TableCell>
@@ -235,13 +248,26 @@ export default function StockBatchesPage() {
                   </TableCell>
                   <TableCell className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      >
-                        <Eye className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-xl">
+                              <Package className="h-5 w-5 text-primary" />
+                              Batch Details: {sb.batchNumber}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <StockBatchItemList batch={sb} />
+                        </DialogContent>
+                      </Dialog>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -249,13 +275,23 @@ export default function StockBatchesPage() {
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      <WarningDialog
+                        id={sb.id}
+                        handler={handleDeleteBatch}
+                        heading={{
+                          title: "Delete Stock Batch",
+                          description:
+                            "Are you sure you want to delete this stock batch? This action is irreversible.",
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                        </Button>
+                      </WarningDialog>
                     </div>
                   </TableCell>
                 </TableRow>

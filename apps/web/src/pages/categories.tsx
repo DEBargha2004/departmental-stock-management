@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Eye, Plus, Search, Trash2 } from "lucide-react";
+import { Boxes, Edit, Eye, Plus, Search, Trash2 } from "lucide-react";
 import {
   categoryCreateSchema,
   categoryUpdateSchema,
@@ -341,7 +341,7 @@ export default function CategoriesPage() {
                 >
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <Search className="h-6 w-6 text-muted-foreground/50" />
+                      <Boxes className="h-6 w-6 text-muted-foreground/50" />
                     </div>
                     <p className="font-medium text-foreground">
                       No categories found

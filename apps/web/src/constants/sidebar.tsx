@@ -1,15 +1,17 @@
 import type { TSidebarItem } from "@/types/sidebar-item";
+import type { MODULE } from "@repo/contracts/module";
 import {
   Box,
   Boxes,
   FileBox,
   LayoutDashboard,
+  Package,
   ScrollText,
   Store,
   UsersRound,
 } from "lucide-react";
 
-export const sidebarItems: TSidebarItem[] = [
+export const sidebarItems = [
   {
     id: "dashboard",
     icon: LayoutDashboard,
@@ -56,7 +58,7 @@ export const sidebarItems: TSidebarItem[] = [
     },
   },
   {
-    id: "purchase-orders",
+    id: "purchase_orders",
     icon: FileBox,
     label: "Purchase Orders",
     href: "/purchase-orders",
@@ -65,8 +67,8 @@ export const sidebarItems: TSidebarItem[] = [
     },
   },
   {
-    id: "stock-batches",
-    icon: Boxes,
+    id: "stock_batches",
+    icon: Package,
     label: "Stock Batches",
     href: "/stock-batches",
     isActive(path) {
@@ -74,7 +76,7 @@ export const sidebarItems: TSidebarItem[] = [
     },
   },
   {
-    id: "activity-log",
+    id: "activity_log",
     icon: ScrollText,
     label: "Activity Log",
     href: "/activity-log",
@@ -82,4 +84,8 @@ export const sidebarItems: TSidebarItem[] = [
       return path === this.href;
     },
   },
-];
+] as const satisfies TSidebarItem[];
+
+export const getSidebarItems = (list: MODULE[]) => {
+  return sidebarItems.filter((item) => list.includes(item.id));
+};

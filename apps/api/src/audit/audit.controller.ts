@@ -2,6 +2,7 @@ import { Controller, Get, ParseIntPipe, Query } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { AUDIT_ACTION, ENTITY_TYPE } from '@repo/contracts/status';
 import { Auth } from 'src/authentication/auth.guard';
+import { ResponseBuilder } from 'src/lib/response';
 
 @Controller('audit')
 export class AuditController {
@@ -16,12 +17,14 @@ export class AuditController {
     @Query('action') action?: AUDIT_ACTION,
     @Query('entity') entity?: ENTITY_TYPE,
   ) {
-    return this.auditService.getAuditLogs({
+    const res = await this.auditService.getAuditLogs({
       query,
       limit,
       page,
       action,
       entity,
     });
+
+    return ResponseBuilder.success(res, 'Audit logs fetched successfully');
   }
 }

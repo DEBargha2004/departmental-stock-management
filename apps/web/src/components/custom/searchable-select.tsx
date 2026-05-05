@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Input } from "../ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover as PopoverPrimitive } from "radix-ui";
 
@@ -66,7 +66,6 @@ export default function SearchableSelect({
         query,
         handleQueryChange,
         onValueChange,
-
         onOpenChange,
       }}
     >
@@ -98,7 +97,10 @@ export function SearchableSelectContent({
 }) {
   return (
     <PopoverContent
-      className={cn("p-0 w-(--radix-popover-trigger-width)", className)}
+      className={cn(
+        "p-0 w-(--radix-popover-trigger-width) overflow-hidden border-input/40 shadow-xl animate-in fade-in zoom-in-95 duration-200",
+        className
+      )}
     >
       {children}
     </PopoverContent>
@@ -114,15 +116,21 @@ export function SearchableSelectInput({
   const { query, handleQueryChange } = useSearchableSelectContext();
 
   return (
-    <Input
-      value={query}
-      onChange={(e) => {
-        handleQueryChange(e.target.value);
-        onChange?.(e);
-      }}
-      className={cn("rounded-b-none", className)}
-      {...props}
-    />
+    <div className="relative border-b border-input/40">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+      <Input
+        value={query}
+        onChange={(e) => {
+          handleQueryChange(e.target.value);
+          onChange?.(e);
+        }}
+        className={cn(
+          "rounded-none border-0 h-11 pl-9 pr-4 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/50 text-sm",
+          className
+        )}
+        {...props}
+      />
+    </div>
   );
 }
 
@@ -130,11 +138,33 @@ export function SearchableSelectVacuum({ listLength }: { listLength: number }) {
   const { loading } = useSearchableSelectContext();
 
   if (loading) {
-    return <Loader2 className="animate-spin" size={16} />;
+    return (
+      <div className="flex flex-col items-center justify-center py-10 px-4 animate-in fade-in duration-300">
+        <div className="relative flex h-10 w-10 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+          <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <Loader2 className="h-4 w-4 text-primary animate-pulse" />
+        </div>
+        <p className="mt-3 text-xs font-medium text-muted-foreground animate-pulse">Searching...</p>
+      </div>
+    );
   }
 
-  if (!listLength)
-    return <p className="text-sm text-muted-foreground">List is Empty</p>;
+  if (!listLength) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 px-4 text-center animate-in fade-in duration-300">
+        <div className="h-10 w-10 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+          <Info className="h-5 w-5 text-muted-foreground/40" />
+        </div>
+        <p className="text-sm font-semibold text-foreground">No matches found</p>
+        <p className="text-[11px] text-muted-foreground mt-1 px-4">
+          Try a different keyword or refine your search
+        </p>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export function SearchableSelectList({
@@ -147,9 +177,9 @@ export function SearchableSelectList({
   return (
     <div
       className={cn(
-        "max-h-60 overflow-y-auto p-2",
-        "flex justify-center",
-        className,
+        "max-h-64 overflow-y-auto p-1.5 custom-scrollbar",
+        "flex flex-col gap-0.5",
+        className
       )}
     >
       {children}
@@ -171,15 +201,18 @@ export function SearchableSelectItem({
   return (
     <div
       className={cn(
-        "cursor-pointer rounded-sm px-2 py-1 hover:bg-accent w-full",
-        className,
+        "group cursor-pointer rounded-md px-3 py-2.5 hover:bg-primary/5 active:bg-primary/10 transition-all duration-200 outline-none",
+        "border border-transparent hover:border-primary/10",
+        className
       )}
       onClick={() => {
         onValueChange(value);
         onOpenChange?.(false);
       }}
     >
-      {children}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
     </div>
   );
 }

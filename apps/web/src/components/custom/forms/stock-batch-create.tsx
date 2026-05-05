@@ -35,15 +35,17 @@ import {
   Loader2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function StockBatchCreateForm({
   form,
   onSubmit,
 }: TFormProps<TStockBatchCreateSchema>) {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500);
 
   const { data: purchaseOrders, isLoading } = useGetAllPurchaseOrdersQuery({
-    query,
+    query: debouncedQuery,
     page: 1,
     limit: 50, // Increased limit for better selection
     status: "ordered",
@@ -72,7 +74,7 @@ export default function StockBatchCreateForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-muted/10 p-5 rounded-2xl border border-border/50">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 bg-muted/10 p-4 rounded-2xl border border-border/50">
           <FormField
             control={form.control}
             name="batchNumber"
@@ -104,16 +106,11 @@ export default function StockBatchCreateForm({
                   Arrival Date
                 </FormLabel>
                 <FormControl>
+                  {/**@ts-ignore */}
                   <Input
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
-                    value={
-                      field.value instanceof Date
-                        ? field.value.toISOString().split("T")[0]
-                        : field.value
-                    }
-                    onChange={(e) => field.onChange(new Date(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
@@ -172,7 +169,7 @@ export default function StockBatchCreateForm({
                       <ChevronRight className="h-4 w-4 text-muted-foreground opacity-30" />
                     </Button>
                   </SearchableSelectTrigger>
-                  <SearchableSelectContent className="w-[350px]">
+                  <SearchableSelectContent className="">
                     <SearchableSelectInput placeholder="Search invoice or vendor..." />
                     <SearchableSelectList className="max-h-[300px] custom-scrollbar">
                       <SearchableSelectVacuum listLength={poDataList.length} />

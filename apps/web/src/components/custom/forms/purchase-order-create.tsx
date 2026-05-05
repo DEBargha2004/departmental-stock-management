@@ -43,6 +43,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import type { TVendor } from "@/controllers/vendor/api";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function CreatePurchaseOrderForm({
   form,
@@ -64,12 +65,14 @@ export default function CreatePurchaseOrderForm({
     products: "",
   });
 
+  const debouncedVendorsQuery = useDebounce(query.vendors, 500);
+
   const { data: vendorsData, isLoading: isLoadingVendors } =
     useGetAllVendorsQuery({
       limit: 100,
       page: 1,
       status: "active",
-      query: query.vendors,
+      query: debouncedVendorsQuery,
     });
 
   const vendors = vendorsData?.data?.data?.list || [];
@@ -229,11 +232,11 @@ export default function CreatePurchaseOrderForm({
                   Order Date
                 </FormLabel>
                 <FormControl>
+                  {/**@ts-ignore */}
                   <Input
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
-                    value={field.value.toLocaleDateString()}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />

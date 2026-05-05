@@ -37,7 +37,6 @@ import {
 import { formatDate } from "@/lib/utils";
 import type { TAuditLog } from "@/controllers/audit/api";
 import { ActionBadge } from "./_components/action-badge";
-import { StatusBadge } from "./_components/status-badge";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -67,8 +66,8 @@ export default function ActivityLogPage() {
   });
 
   const dataList = auditResponse?.data?.data;
-  const logs = dataList?.list || [];
-  const totalCount = dataList?.count || 0;
+  const logs = dataList?.list ?? [];
+  const totalCount = dataList?.count ?? 0;
 
   // Pagination logic
   const firstPage = 1;
@@ -188,9 +187,6 @@ export default function ActivityLogPage() {
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Timestamp
               </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Status
-              </TableHead>
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
                 Details
               </TableHead>
@@ -214,9 +210,6 @@ export default function ActivityLogPage() {
                   </TableCell>
                   <TableCell className="py-3">
                     <Skeleton className="h-5 w-28" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-16" />
                   </TableCell>
                   <TableCell className="py-3 text-right">
                     <Skeleton className="h-8 w-8 ml-auto" />
@@ -263,9 +256,6 @@ export default function ActivityLogPage() {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <StatusBadge status={log.status} />
                   </TableCell>
                   <TableCell className="py-3 text-right">
                     <Button

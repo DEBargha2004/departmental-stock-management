@@ -11,6 +11,8 @@ import {
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Loader2 } from "lucide-react";
+import { catchError } from "@/lib/catch-error";
+import { toast } from "sonner";
 
 export default function WarningDialog({
   children,
@@ -28,7 +30,10 @@ export default function WarningDialog({
 
   const handleProceed = async () => {
     setIsExecuting(true);
-    await handler(id);
+    const [err] = await catchError(handler(id));
+
+    if (err) toast.error(err.message);
+
     setIsExecuting(false);
   };
   return (

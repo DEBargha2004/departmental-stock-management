@@ -13,14 +13,18 @@ type RolePermission = {
 export const ROLE_PERMISSION_LIST = [
   {
     role: ROLES.ADMIN,
-    permissions: [...PERMISSION_LIST],
+    permissions: PERMISSION_LIST,
   },
   {
     role: ROLES.FACULTY,
-    permissions: [PERMISSIONS.PRODUCT_READ, PERMISSIONS.VENDOR_READ],
+    permissions: [
+      PERMISSIONS.PRODUCT_READ,
+      PERMISSIONS.STOCK_READ,
+      PERMISSIONS.USER_READ,
+    ],
   },
   {
     role: ROLES.STUDENT,
-    permissions: [PERMISSIONS.PRODUCT_READ],
+    permissions: [PERMISSIONS.PRODUCT_READ, PERMISSIONS.STOCK_READ],
   },
 ] as const satisfies RolePermission[];

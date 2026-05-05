@@ -13,6 +13,7 @@ import VendorsPage from "./pages/vendors/index";
 import ActivityLogPage from "./pages/activity-log/index";
 import PurchaseOrdersPage from "./pages/purchase-orders/index";
 import StockBatchesPage from "./pages/stock-batches/index";
+import AuthorizationLayout from "./layouts/authorization-layout";
 
 export const router = createBrowserRouter([
   {
@@ -42,35 +43,67 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/",
-            Component: DashboardPage,
+            Component: () => (
+              <AuthorizationLayout module="dashboard">
+                <DashboardPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/users",
-            Component: UsersPage,
+            Component: () => (
+              <AuthorizationLayout module="users">
+                <UsersPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/categories",
-            Component: CategoriesPage,
+            Component: () => (
+              <AuthorizationLayout module="categories">
+                <CategoriesPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/products",
-            Component: ProductsPage,
+            Component: () => (
+              <AuthorizationLayout module="products">
+                <ProductsPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/vendors",
-            Component: VendorsPage,
+            Component: () => (
+              <AuthorizationLayout module="vendors">
+                <VendorsPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/purchase-orders",
-            Component: PurchaseOrdersPage,
+            Component: () => (
+              <AuthorizationLayout module="purchase_orders">
+                <PurchaseOrdersPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/stock-batches",
-            Component: StockBatchesPage,
+            Component: () => (
+              <AuthorizationLayout module="stock_batches">
+                <StockBatchesPage />
+              </AuthorizationLayout>
+            ),
           },
           {
             path: "/activity-log",
-            Component: ActivityLogPage,
+            Component: () => (
+              <AuthorizationLayout module="activity_log">
+                <ActivityLogPage />
+              </AuthorizationLayout>
+            ),
           },
         ],
       },

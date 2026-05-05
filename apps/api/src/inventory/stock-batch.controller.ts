@@ -79,6 +79,8 @@ export class StockBatchController {
     return ResponseBuilder.success(null, 'Stock batch updated successfully');
   }
 
+  @Auth('stock-batch.delete')
+  @Delete(':id')
   async deleteStockBatch(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: TJWTPayload,

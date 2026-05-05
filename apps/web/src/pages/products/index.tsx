@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Edit, Trash2, Eye, Plus } from "lucide-react";
+import { Search, Edit, Trash2, Eye, Plus, Box } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { catchError } from "@/lib/catch-error";
@@ -348,7 +348,7 @@ export default function ProductsPage() {
                     {item.stock.quantity ?? 0}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-muted-foreground">
-                    ${item.price.toFixed(2)}
+                    ₹{item.price.toFixed(2)}
                   </TableCell>
                   <TableCell className="py-3">
                     {/* Status logic can be improved based on quantity vs minStockLevel if needed, 
@@ -423,7 +423,7 @@ export default function ProductsPage() {
                 >
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <Search className="h-6 w-6 text-muted-foreground/50" />
+                      <Box className="h-6 w-6 text-muted-foreground/50" />
                     </div>
                     <p className="font-medium text-foreground">
                       No products found

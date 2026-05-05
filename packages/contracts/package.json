@@ -69,6 +69,10 @@
     "./stock-batch": {
       "types": "./src/inventory/stock-batch.ts",
       "default": "./dist/inventory/stock-batch.js"
+    },
+    "./module": {
+      "types": "./src/module.ts",
+      "default": "./dist/module.js"
     }
   }
 }

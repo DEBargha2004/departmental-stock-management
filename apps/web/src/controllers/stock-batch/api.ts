@@ -8,7 +8,7 @@ import type {
 } from "@repo/contracts/stock-batch";
 import { api } from "@/lib/axios";
 
-type TStockBatch = {
+export type TStockBatch = {
   id: number;
   batchNumber: string;
   purchaseOrder: {

@@ -16,7 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Edit, Trash2, Eye, FileText, Plus } from "lucide-react";
+import {
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  FileText,
+  Plus,
+  FileBox,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { catchError } from "@/lib/catch-error";
@@ -175,10 +183,6 @@ export default function PurchaseOrdersPage() {
 
   const handleDeletePO = async (poId: number) => {
     await deletePO({ id: poId });
-  };
-
-  const handleViewPO = (poId: number) => {
-    console.log("View PO:", poId);
   };
 
   return (
@@ -375,7 +379,6 @@ export default function PurchaseOrdersPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => handleViewPO(po.id)}
                           >
                             <Eye className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
@@ -422,7 +425,7 @@ export default function PurchaseOrdersPage() {
                 >
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <FileText className="h-6 w-6 text-muted-foreground/50" />
+                      <FileBox className="h-6 w-6 text-muted-foreground/50" />
                     </div>
                     <p className="font-medium text-foreground">
                       No purchase orders found

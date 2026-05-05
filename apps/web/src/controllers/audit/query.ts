@@ -6,12 +6,12 @@ export const useGetAuditLogsQuery = ({
   query,
   action,
   entity,
-  status,
+
   limit,
   page,
 }: TAuditLogQuery) => {
   return useQuery({
-    queryKey: ["audit-logs", query, action, entity, status, limit, page],
-    queryFn: () => getAuditLogsRequest({ query, action, entity, status, limit, page }),
+    queryKey: ["audit-logs", query, action, entity, limit, page],
+    queryFn: () => getAuditLogsRequest({ query, action, entity, limit, page }),
   });
 };

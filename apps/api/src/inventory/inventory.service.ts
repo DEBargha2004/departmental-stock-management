@@ -435,6 +435,11 @@ export class InventoryService {
         );
       }
 
+      const stockList = await this.stockService.getStockDetailsList(
+        po.order.items.map((item) => item.product.id),
+        tx,
+      );
+
       const batch = await this.stockBatchService.createStockBatch(payload, tx);
 
       await this.purchaseOrderService.updatePurchaseOrderStatus(
@@ -458,7 +463,26 @@ export class InventoryService {
         tx,
       );
 
-      await this.stockService.updateStockMetadata;
+      await this.stockService.updateStockMetadata(
+        payload.purchaseItems.map((item) => {
+          const poItem = po.order.items.find(
+            (poIt) => poIt.id === item.purchaseItemId,
+          )!;
+          const existingStock = stockList.find(
+            (stock) => stock.productId === poItem.product.id,
+          )!;
+          const totalQuantity =
+            item.quantityReceived + existingStock.quantityAvailable;
+
+          return {
+            productId: poItem.product.id,
+            payload: {
+              quantityAvailable: totalQuantity,
+            },
+          };
+        }),
+        tx,
+      );
 
       await this.auditService.logAction(
         {
@@ -551,7 +575,7 @@ export class InventoryService {
             (s) => s.productId === poItem.product.id,
           );
 
-          const quantityDelta = sbItem.quantity - item.quantityReceived;
+          const quantityDelta = item.quantityReceived - sbItem.quantity;
 
           return {
             productId: poItem.product.id,

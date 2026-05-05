@@ -6,7 +6,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class AppService {
-  s3: S3Client;
+  private s3: S3Client;
 
   constructor(private configService: ConfigService<TConfig>) {
     this.s3 = new S3Client({
@@ -24,7 +24,15 @@ export class AppService {
     });
   }
 
-  async getPresignedUrl(key: string, contentType: string) {
+  async generateProductImageUploadUrl() {
+    const randomKey = Math.random().toString(36).substring(2, 15);
+    const path = `images/products/${randomKey}.jpg`;
+    const url = await this.getPresignedUrl(path, 'image/jpeg');
+
+    return { url, path };
+  }
+
+  private async getPresignedUrl(key: string, contentType: string) {
     const command = new PutObjectCommand({
       Bucket: this.configService.get('minio_bucket', { infer: true }),
       Key: key,
