@@ -1,5 +1,13 @@
 import type { TStockBatch } from "@/controllers/stock-batch/api";
-import { Package2, Hash, IndianRupee, Calculator, Calendar, Receipt, User } from "lucide-react";
+import {
+  Package2,
+  Hash,
+  IndianRupee,
+  Calculator,
+  Calendar,
+  Receipt,
+  User,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,6 +22,8 @@ import { formatDate } from "@/lib/utils";
 export default function StockBatchItemList({ batch }: { batch: TStockBatch }) {
   const items = batch.items;
 
+  console.log(items);
+
   return (
     <div className="space-y-6">
       {/* Batch Meta Information */}
@@ -23,7 +33,9 @@ export default function StockBatchItemList({ batch }: { batch: TStockBatch }) {
             <Receipt className="h-3 w-3" />
             PO Reference
           </span>
-          <span className="text-sm font-medium">{batch.purchaseOrder.invoiceId}</span>
+          <span className="text-sm font-medium">
+            {batch.purchaseOrder.invoiceId}
+          </span>
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
@@ -127,11 +139,9 @@ export default function StockBatchItemList({ batch }: { batch: TStockBatch }) {
                 </TableCell>
                 <TableCell className="px-4 py-4 text-base font-black text-primary text-right bg-primary/5 tabular-nums underline decoration-primary/20 underline-offset-4">
                   ₹
-                  {items
-                    .reduce((acc, item) => acc + item.quantity * item.unitPrice, 0)
-                    .toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                    })}
+                  {batch.purchaseOrder.totalAmount.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                  })}
                 </TableCell>
               </TableRow>
             </TableFooter>

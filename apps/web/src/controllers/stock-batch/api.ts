@@ -7,6 +7,9 @@ import type {
   TStockBatchUpdateSchema,
 } from "@repo/contracts/stock-batch";
 import { api } from "@/lib/axios";
+import type { TPurchaseOrder } from "../purchase-order/api";
+import type { TProduct } from "../product/api";
+import type { TVendor } from "../vendor/api";
 
 export type TStockBatch = {
   id: number;
@@ -28,6 +31,7 @@ export type TStockBatch = {
 
 export type TStockBatchItem = {
   id: number;
+  purchaseOrderItemId: number;
   product: {
     id: number;
     name: string;
@@ -64,7 +68,19 @@ export async function getStockBatchRequest({
   id,
 }: {
   id: number;
-}): Promise<AxiosResponse<TSuccess<TStockBatch>>> {
+}): Promise<
+  AxiosResponse<
+    TSuccess<{
+      batch: TStockBatch;
+      list: {
+        purchaseOrder: {
+          order: TPurchaseOrder;
+          list: { product: TProduct[]; vendor: TVendor[] };
+        }[];
+      };
+    }>
+  >
+> {
   return api.get(`/inventory/stock-batch/${id}`);
 }
 

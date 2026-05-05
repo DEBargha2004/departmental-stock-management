@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { TStockBatchQuery } from '@repo/contracts/query';
 import {
   DATABASE_MODULE,
@@ -19,9 +19,10 @@ import {
   TStockBatchUpdateSchema,
 } from '@repo/contracts/stock-batch';
 
-type TStockBatch = {
+export type TStockBatch = {
   id: number;
   batchNumber: string;
+  arrivalDate: Date;
   purchaseOrder: {
     id: number;
     invoiceId: string;
@@ -33,7 +34,6 @@ type TStockBatch = {
     id: number;
     name: string;
   };
-  arrivalDate: Date;
   items: {
     id: number;
     purchaseOrderItemId: number;
@@ -89,15 +89,20 @@ export class StockBatchService {
       .leftJoin(purchaseOrder, eq(purchaseOrder.id, stockBatch.purchaseOrderId))
       .leftJoin(
         purchaseOrderItems,
-        eq(purchaseOrderItems.purchaseOrderId, purchaseOrder.id),
+        eq(purchaseOrderItems.id, stockBatchItems.purchaseOrderItemId),
       )
       .leftJoin(vendor, eq(purchaseOrder.vendorId, vendor.id))
       .leftJoin(product, eq(product.id, purchaseOrderItems.productId))
       .groupBy(stockBatch.id, purchaseOrder.id, vendor.id)
       .where(eq(stockBatch.id, id));
 
+    if (!res) {
+      throw new NotFoundException('Stock Batch not found');
+    }
+
     return res;
   }
+
   async getStockBatchByPurchaseOrder(poId: number, trx?: Transaction) {
     const db = trx ?? this.db;
     const [res] = await db
@@ -117,6 +122,8 @@ export class StockBatchService {
       .select({
         id: stockBatch.id,
         batchNumber: stockBatch.batchNumber,
+        arrivalDate: stockBatch.arrivalDate,
+        totalAmount: purchaseOrder.totalAmount,
         purchaseOrder: sql<TStockBatch['purchaseOrder']>`JSON_BUILD_OBJECT(
           'id', ${purchaseOrder.id},
           'invoiceId', ${purchaseOrder.invoiceId},
@@ -128,7 +135,6 @@ export class StockBatchService {
           'id', ${vendor.id},
           'name', ${vendor.name}
         )`.as('vendor'),
-        arrivalDate: stockBatch.arrivalDate,
         items: sql<TStockBatch['items']>`COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
@@ -150,7 +156,7 @@ export class StockBatchService {
       .leftJoin(purchaseOrder, eq(purchaseOrder.id, stockBatch.purchaseOrderId))
       .leftJoin(
         purchaseOrderItems,
-        eq(purchaseOrderItems.purchaseOrderId, purchaseOrder.id),
+        eq(purchaseOrderItems.id, stockBatchItems.purchaseOrderItemId),
       )
       .leftJoin(vendor, eq(purchaseOrder.vendorId, vendor.id))
       .leftJoin(product, eq(product.id, purchaseOrderItems.productId))

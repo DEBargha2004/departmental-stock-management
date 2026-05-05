@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useGetAllPurchaseOrdersQuery } from "@/controllers/purchase-order/query";
 import type { TFormProps } from "@/types/form-props";
 import type { TStockBatchCreateSchema } from "@repo/contracts/stock-batch";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useWatch } from "react-hook-form";
 import SearchableSelect, {
   SearchableSelectContent,
@@ -36,21 +36,34 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useDebounce } from "@/hooks/use-debounce";
+import { formatDateForInput } from "@/lib/utils";
+import type { TPurchaseOrder } from "@/controllers/purchase-order/api";
 
 export default function StockBatchCreateForm({
   form,
   onSubmit,
-}: TFormProps<TStockBatchCreateSchema>) {
+  defaultList,
+}: TFormProps<TStockBatchCreateSchema> & {
+  defaultList?: {
+    purchaseOrders: TPurchaseOrder[];
+  };
+}) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
 
   const { data: purchaseOrders, isLoading } = useGetAllPurchaseOrdersQuery({
     query: debouncedQuery,
     page: 1,
-    limit: 50, // Increased limit for better selection
+    limit: 20,
     status: "ordered",
   });
-  const poDataList = purchaseOrders?.data.data?.list ?? [];
+  const poDataList =
+    (query
+      ? purchaseOrders?.data.data?.list
+      : defaultList?.purchaseOrders?.length
+        ? defaultList.purchaseOrders
+        : purchaseOrders?.data.data?.list) ?? [];
+
   const poId = useWatch({ control: form.control, name: "purchaseOrderId" });
   const selectedPurchaseOrder = poDataList.find((po) => po.id === poId);
 
@@ -59,7 +72,19 @@ export default function StockBatchCreateForm({
     name: "purchaseItems",
   });
 
+  const isUpdate = !!defaultList;
+  const firstRenderRef = useRef(true);
+
+  // This useEffect is used to populate the purchase items when a purchase order is selected
   useEffect(() => {
+    if (firstRenderRef.current) {
+      // This condition is used to prevent the purchase items from being populated when the component is first rendered.
+      // This happens when the user clicks the update button, and we don't want to populate the purchase items.
+      firstRenderRef.current = false;
+      // if we are in update mode, we don't want to populate the purchase items
+      if (isUpdate) return;
+    }
+
     if (selectedPurchaseOrder) {
       const items = selectedPurchaseOrder.items.map((item) => ({
         purchaseItemId: item.id,
@@ -69,7 +94,7 @@ export default function StockBatchCreateForm({
     } else {
       replace([]);
     }
-  }, [selectedPurchaseOrder, replace]);
+  }, [selectedPurchaseOrder, replace, isUpdate]);
 
   return (
     <Form {...form}>
@@ -106,11 +131,11 @@ export default function StockBatchCreateForm({
                   Arrival Date
                 </FormLabel>
                 <FormControl>
-                  {/**@ts-ignore */}
                   <Input
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
+                    value={formatDateForInput(field.value)}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
@@ -352,6 +377,8 @@ export default function StockBatchCreateForm({
         >
           {form.formState.isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
+          ) : isUpdate ? (
+            "Update Batch"
           ) : (
             "Receive Batch"
           )}

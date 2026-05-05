@@ -16,6 +16,7 @@ import { vendor } from 'src/vendor/vendor.schema';
 import { product } from './product.schema';
 import { TPurchaseOrderQuery } from '@repo/contracts/query';
 import { PURCHASE_ORDER_STATUS } from '@repo/contracts/status';
+import { VendorService } from 'src/vendor/vendor.service';
 
 export type PurchaseOrder = {
   id: number;
@@ -45,6 +46,7 @@ export class PurchaseOrderService {
   constructor(
     @Inject(DATABASE_MODULE) private db: TDB,
     private productService: ProductService,
+    private vendorService: VendorService,
   ) {}
 
   async createPurchaseOrder(
@@ -120,17 +122,26 @@ export class PurchaseOrderService {
       .leftJoin(vendor, eq(vendor.id, purchaseOrder.vendorId))
       .leftJoin(product, eq(purchaseOrderItems.productId, product.id))
       .where(and(eq(purchaseOrder.id, id), isNull(purchaseOrder.deletedAt)))
-      .groupBy(purchaseOrder.id, vendor.id, product.name);
+      .groupBy(purchaseOrder.id, vendor.id);
 
     if (!po) {
       throw new NotFoundException(`Purchase order with id ${id} not found`);
     }
 
-    const productList = await Promise.all(
-      po.items.map((item) => this.productService.getProduct(item.product.id)),
-    );
+    const list = await Promise.all([
+      ...po.items.map((item) =>
+        this.productService.getProduct(item.product.id),
+      ),
+      this.vendorService.getVendor(po.vendor.id),
+    ]);
 
-    return { order: po, list: productList };
+    return {
+      order: po,
+      list: {
+        product: list.slice(0, list.length - 1),
+        vendor: list.slice(list.length - 1),
+      },
+    };
   }
 
   async getPurchaseOrders(
@@ -192,7 +203,7 @@ export class PurchaseOrderService {
           ...(status ? [eq(purchaseOrder.status, status)] : []),
         ),
       )
-      .groupBy(purchaseOrder.id, vendor.id, product.name)
+      .groupBy(purchaseOrder.id, vendor.id)
       .orderBy(
         query
           ? desc(

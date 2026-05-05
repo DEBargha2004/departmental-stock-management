@@ -3,7 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
 import { type TUserUpdateSchema } from '@repo/contracts/user';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { user } from './user.schema';
@@ -16,8 +16,9 @@ import type { TUserQuery } from '@repo/contracts/query';
 export class UserService {
   constructor(@Inject(DATABASE_MODULE) public db: TDB) {}
 
-  async getUserById(id: number) {
-    const [res] = await this.db
+  async getUserById(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [res] = await db
       .select()
       .from(user)
       .where(and(isNull(user.deletedAt), eq(user.id, id)));
@@ -25,53 +26,67 @@ export class UserService {
     return res;
   }
 
-  async getUserByEmail(email: string) {
-    const res = await this.db
+  async getUserByEmail(email: string, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const res = await db
       .select()
       .from(user)
       .where(and(isNull(user.deletedAt), eq(user.email, email)));
 
     return res[0];
   }
-  async createUser(userDto: TUserInfo) {
-    const [res] = await this.db
-      .insert(user)
-      .values({
-        email: userDto.email,
-        name: userDto.name,
-        role: userDto.role,
-      })
-      .returning();
+  async createUser(userDto: TUserInfo, trx?: Transaction) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const [res] = await tx
+        .insert(user)
+        .values({
+          email: userDto.email,
+          name: userDto.name,
+          role: userDto.role,
+        })
+        .returning();
 
-    return res;
+      return res;
+    });
   }
 
-  async updateUser(id: number, updateUserDto: TUserInfo) {
-    const [updatedUser] = await this.db
-      .update(user)
-      .set({
-        name: updateUserDto.name,
-        email: updateUserDto.email,
-        role: updateUserDto.role,
-      })
-      .where(and(eq(user.id, id), isNull(user.deletedAt)))
-      .returning();
+  async updateUser(id: number, updateUserDto: TUserInfo, trx?: Transaction) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const [updatedUser] = await tx
+        .update(user)
+        .set({
+          name: updateUserDto.name,
+          email: updateUserDto.email,
+          role: updateUserDto.role,
+        })
+        .where(and(eq(user.id, id), isNull(user.deletedAt)))
+        .returning();
 
-    return updatedUser;
+      return updatedUser;
+    });
   }
 
-  async deleteUser(id: number) {
-    const [deletedUser] = await this.db
-      .update(user)
-      .set({ deletedAt: new Date() })
-      .where(eq(user.id, id))
-      .returning();
+  async deleteUser(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const [deletedUser] = await tx
+        .update(user)
+        .set({ deletedAt: new Date() })
+        .where(eq(user.id, id))
+        .returning();
 
-    return deletedUser;
+      return deletedUser;
+    });
   }
 
-  async getUsers({ query, role, limit = 20, page = 1, status }: TUserQuery) {
-    const baseQuery = this.db
+  async getUsers(
+    { query, role, limit = 20, page = 1, status }: TUserQuery,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+    const baseQuery = db
       .select()
       .from(user)
       .where(
@@ -105,13 +120,13 @@ export class UserService {
       )
       .as('base_query');
 
-    const selectQuery = this.db
+    const selectQuery = db
       .select()
       .from(baseQuery)
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const countQuery = this.db.select({ count: count() }).from(baseQuery);
+    const countQuery = db.select({ count: count() }).from(baseQuery);
 
     const [users, [{ count: totalCount }]] = await Promise.all([
       selectQuery,
@@ -121,8 +136,9 @@ export class UserService {
     return { users, count: totalCount };
   }
 
-  async getAdmin() {
-    const [admin] = await this.db
+  async getAdmin(trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [admin] = await db
       .select()
       .from(user)
       .where(and(isNull(user.deletedAt), eq(user.role, 'admin')));

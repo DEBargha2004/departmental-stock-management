@@ -26,11 +26,20 @@ import {
 } from '@repo/contracts/purchase-order';
 import { PurchaseOrder, PurchaseOrderService } from './purchase-order.service';
 import { VendorService } from 'src/vendor/vendor.service';
-import { StockBatchService } from './stock-batch.service';
+import { StockBatchService, TStockBatch } from './stock-batch.service';
 import {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
 } from '@repo/contracts/stock-batch';
+import {
+  purchaseOrder,
+  purchaseOrderItems,
+  stockBatch,
+  stockBatchItems,
+} from './purchase-order.schema';
+import { eq, sql } from 'drizzle-orm';
+import { vendor } from 'src/vendor/vendor.schema';
+import { product } from './product.schema';
 
 @Injectable()
 export class InventoryService {
@@ -84,6 +93,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'create',
+          actorType: 'user',
           entityId: product.id,
           entityType: 'product',
           description: `Created product with id ${product.id}`,
@@ -159,6 +169,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'update',
+          actorType: 'user',
           entityId: id,
           entityType: 'product',
           description: `Updated product with id ${id}`,
@@ -209,6 +220,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'delete',
+          actorType: 'user',
           entityId: id,
           entityType: 'product',
           description: `Deleted product with id ${id}`,
@@ -228,7 +240,7 @@ export class InventoryService {
 
     const po = await db.transaction(async (tx) => {
       //check for vendor
-      const vendor = await this.vendorService.getVendor(payload.vendorId);
+      const vendor = await this.vendorService.getVendor(payload.vendorId, tx);
       if (!vendor) throw new NotFoundException('Vendor not found');
 
       const items = await Promise.all(
@@ -250,6 +262,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'create',
+          actorType: 'user',
           entityId: po.entry.id,
           entityType: 'purchase_order',
           description: `Created purchase order with id ${po.entry.id}`,
@@ -307,7 +320,7 @@ export class InventoryService {
       if (!po) throw new NotFoundException('Purchase order not found');
 
       //check for vendor
-      const vendor = await this.vendorService.getVendor(payload.vendorId);
+      const vendor = await this.vendorService.getVendor(payload.vendorId, tx);
       if (!vendor) throw new NotFoundException('Vendor not found');
 
       const items = await Promise.all(
@@ -338,6 +351,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'update',
+          actorType: 'user',
           entityId: id,
           entityType: 'purchase_order',
           description: `Updated purchase order with id ${id}`,
@@ -368,6 +382,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'delete',
+          actorType: 'user',
           entityId: id,
           entityType: 'purchase_order',
           description: `Deleted purchase order with id ${id}`,
@@ -487,6 +502,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'create',
+          actorType: 'user',
           entityId: batch.id,
           entityType: 'stock_batch',
           description: `Created stock batch for purchase order ${payload.purchaseOrderId}`,
@@ -495,6 +511,22 @@ export class InventoryService {
         tx,
       );
     });
+  }
+
+  async getDetailedStockBatch(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const sb = await this.stockBatchService.getStockBatch(id, trx);
+
+    const po = await this.purchaseOrderService.getPurchaseOrder(
+      sb.purchaseOrder.id,
+      trx,
+    );
+    return {
+      batch: sb,
+      list: {
+        purchaseOrder: [po],
+      },
+    };
   }
 
   async updateStockBatch(
@@ -531,7 +563,9 @@ export class InventoryService {
       }
 
       // check if products in items are valid and belong to the po
-      const isItemsIncluded = payload.purchaseItems.every((item) => sb);
+      const isItemsIncluded = payload.purchaseItems.every((item) =>
+        po.order.items.some((poItem) => poItem.id === item.purchaseItemId),
+      );
 
       if (!isItemsIncluded) {
         throw new BadRequestException(
@@ -541,6 +575,7 @@ export class InventoryService {
 
       const stockList = await this.stockService.getStockDetailsList(
         po.order.items.map((i) => i.product.id),
+        tx,
       );
 
       await this.stockBatchService.updateStockBatch(id, payload, tx);
@@ -560,6 +595,7 @@ export class InventoryService {
             reference: `Stock batch ${id} updated for purchase order ${po.order.id}`,
           };
         }),
+        tx,
       );
 
       await this.stockService.updateStockMetadata(
@@ -589,6 +625,7 @@ export class InventoryService {
       await this.auditService.logAction(
         {
           action: 'update',
+          actorType: 'user',
           entityId: id,
           entityType: 'stock_batch',
           description: `Updated stock batch with id ${id}`,
@@ -610,6 +647,7 @@ export class InventoryService {
 
       const stockList = await this.stockService.getStockDetailsList(
         existingBatch.items.map((i) => i.product.id),
+        tx,
       );
 
       await this.stockBatchService.deleteStockBatch(id, tx);
@@ -628,6 +666,7 @@ export class InventoryService {
             reference: `Stock batch ${id} deleted for purchase order ${existingBatch.purchaseOrder.id}`,
           };
         }),
+        tx,
       );
 
       await this.stockService.updateStockMetadata(
@@ -641,11 +680,13 @@ export class InventoryService {
             },
           };
         }),
+        tx,
       );
 
       await this.auditService.logAction(
         {
           action: 'delete',
+          actorType: 'user',
           entityId: id,
           entityType: 'stock_batch',
           description: `Deleted stock batch with id ${id}`,

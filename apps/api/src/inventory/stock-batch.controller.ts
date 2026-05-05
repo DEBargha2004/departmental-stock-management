@@ -31,7 +31,7 @@ export class StockBatchController {
   @Auth('stock-batch.read')
   @Get(':id')
   async getStockBatch(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.stockBatchService.getStockBatch(id);
+    const data = await this.inventoryService.getDetailedStockBatch(id);
 
     return ResponseBuilder.success(data, 'Stock batch fetched successfully');
   }

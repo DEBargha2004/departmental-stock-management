@@ -40,6 +40,12 @@ export const ENTITY_TYPE = {
   ISSUE_ITEM: "issue_item",
   RETURN_ITEM: "return_item",
   STOCK: "stock",
+  VENDOR: "vendor",
+} as const;
+
+export const ACTOR_TYPE = {
+  USER: "user",
+  SYSTEM: "system",
 } as const;
 
 export type STATUS = (typeof STATUS)[keyof typeof STATUS];
@@ -50,6 +56,7 @@ export type PURCHASE_ORDER_STATUS =
   (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
 export type AUDIT_ACTION = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 export type ENTITY_TYPE = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];
+export type ACTOR_TYPE = (typeof ACTOR_TYPE)[keyof typeof ACTOR_TYPE];
 
 export const STATUS_LIST = Object.values(STATUS);
 export const PRODUCT_STATUS_LIST = Object.values(PRODUCT_STATUS);
@@ -57,6 +64,7 @@ export const PURCHASE_ORDER_STATUS_LIST = Object.values(PURCHASE_ORDER_STATUS);
 export const MOVEMENT_TYPE_LIST = Object.values(MOVEMENT_TYPE);
 export const AUDIT_ACTION_LIST = Object.values(AUDIT_ACTION);
 export const ENTITY_TYPE_LIST = Object.values(ENTITY_TYPE);
+export const ACTOR_TYPE_LIST = Object.values(ACTOR_TYPE);
 
 export const STATUS_FORMATTED = [
   {
@@ -177,6 +185,17 @@ export const ENTITY_TYPE_FORMATTED = [
   },
 ] as const satisfies { id: ENTITY_TYPE; label: string }[];
 
+export const ACTOR_TYPE_FORMATTED = [
+  {
+    id: "user",
+    label: "User",
+  },
+  {
+    id: "system",
+    label: "System",
+  },
+] as const satisfies { id: ACTOR_TYPE; label: string }[];
+
 export const getStatusObject = (status: STATUS) => {
   return STATUS_FORMATTED.find((s) => s.id === status)!;
 };
@@ -199,4 +218,8 @@ export const getAuditActionObject = (action: AUDIT_ACTION) => {
 
 export const getEntityTypeObject = (entityType: ENTITY_TYPE) => {
   return ENTITY_TYPE_FORMATTED.find((e) => e.id === entityType)!;
+};
+
+export const getActorTypeObject = (actorType: ACTOR_TYPE) => {
+  return ACTOR_TYPE_FORMATTED.find((e) => e.id === actorType)!;
 };

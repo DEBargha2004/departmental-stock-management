@@ -4,7 +4,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import {
+  DATABASE_MODULE,
+  type TDB,
+  type Transaction,
+} from 'src/database/db.module';
 import {
   type TVendorCreateSchema,
   type TVendorUpdateSchema,
@@ -13,58 +17,118 @@ import { vendor } from './vendor.schema';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { TVendorQuery } from '@repo/contracts/query';
 import { StockProcurementService } from 'src/stock-procurement/stock-procurement.service';
+import { AuditService } from 'src/audit/audit.service';
+import type { TJWTPayload } from 'src/authentication/auth.service';
 
 @Injectable()
 export class VendorService {
   constructor(
     @Inject(DATABASE_MODULE) private db: TDB,
     private stockProcurementService: StockProcurementService,
+    private auditService: AuditService,
   ) {}
 
-  async createVendor(payload: TVendorCreateSchema) {
-    const [res] = await this.db
-      .insert(vendor)
-      .values({
-        name: payload.name,
-        contactPerson: payload.contactPerson,
-        phone: payload.phone,
-        email: payload.email,
-        address: payload.address,
-      })
-      .returning();
+  async createVendor(
+    payload: TVendorCreateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const [res] = await tx
+        .insert(vendor)
+        .values({
+          name: payload.name,
+          contactPerson: payload.contactPerson,
+          phone: payload.phone,
+          email: payload.email,
+          address: payload.address,
+        })
+        .returning();
 
-    if (!res) throw new InternalServerErrorException('Failed to create vendor');
+      if (!res)
+        throw new InternalServerErrorException('Failed to create vendor');
 
-    return res;
+      await this.auditService.logAction(
+        {
+          action: 'create',
+          actorType: 'user',
+          entityId: res.id,
+          entityType: 'vendor',
+          description: `Created vendor with id ${res.id}`,
+          userId: user.id,
+        },
+        tx,
+      );
+
+      return res;
+    });
   }
 
-  async updateVendor(id: number, payload: TVendorUpdateSchema) {
-    const [res] = await this.db
-      .update(vendor)
-      .set({
-        name: payload.name,
-        contactPerson: payload.contactPerson,
-        phone: payload.phone,
-        email: payload.email,
-        address: payload.address,
-      })
-      .where(and(eq(vendor.id, id), isNull(vendor.deletedAt)))
-      .returning();
+  async updateVendor(
+    id: number,
+    payload: TVendorUpdateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const [res] = await tx
+        .update(vendor)
+        .set({
+          name: payload.name,
+          contactPerson: payload.contactPerson,
+          phone: payload.phone,
+          email: payload.email,
+          address: payload.address,
+        })
+        .where(and(eq(vendor.id, id), isNull(vendor.deletedAt)))
+        .returning();
 
-    if (!res) throw new InternalServerErrorException('Failed to update vendor');
+      if (!res)
+        throw new InternalServerErrorException('Failed to update vendor');
 
-    return res;
+      await this.auditService.logAction(
+        {
+          action: 'update',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'vendor',
+          description: `Updated vendor with id ${id}`,
+          userId: user.id,
+        },
+        tx,
+      );
+
+      return res;
+    });
   }
 
-  async deleteVendor(id: number) {
-    await this.db
-      .update(vendor)
-      .set({ deletedAt: new Date() })
-      .where(and(eq(vendor.id, id), isNull(vendor.deletedAt)));
+  async deleteVendor(id: number, user: TJWTPayload, trx?: Transaction) {
+    const db = trx ?? this.db;
+    await db.transaction(async (tx) => {
+      await tx
+        .update(vendor)
+        .set({ deletedAt: new Date() })
+        .where(and(eq(vendor.id, id), isNull(vendor.deletedAt)));
+
+      await this.auditService.logAction(
+        {
+          action: 'delete',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'vendor',
+          description: `Deleted vendor with id ${id}`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
   }
 
-  async getVendor(id: number) {
-    const [res] = await this.db
+  async getVendor(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    const [res] = await db
       .select({
         id: vendor.id,
         name: vendor.name,
@@ -79,7 +143,7 @@ export class VendorService {
     if (!res) throw new NotFoundException('Vendor not found');
 
     const lastOrderInfo =
-      await this.stockProcurementService.getLastOrderOfVendor([res.id]);
+      await this.stockProcurementService.getLastOrderOfVendor([res.id], trx);
 
     return {
       ...res,
@@ -89,8 +153,12 @@ export class VendorService {
     };
   }
 
-  async getVendors({ query, limit = 20, page = 1, status }: TVendorQuery) {
-    const baseQuery = this.db
+  async getVendors(
+    { query, limit = 20, page = 1, status }: TVendorQuery,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+    const baseQuery = db
       .select({
         id: vendor.id,
         name: vendor.name,
@@ -131,12 +199,12 @@ export class VendorService {
       )
       .as('base_query');
 
-    const selectQuery = this.db
+    const selectQuery = db
       .select()
       .from(baseQuery)
       .limit(limit)
       .offset((page - 1) * limit);
-    const countQuery = this.db
+    const countQuery = db
       .select({ count: count().as('count') })
       .from(baseQuery);
 
@@ -148,6 +216,7 @@ export class VendorService {
     const lastOrderInfos =
       await this.stockProcurementService.getLastOrderOfVendor(
         list.map((i) => i.id),
+        trx,
       );
 
     const listWithOrderDate = list.map((v) => {

@@ -39,7 +39,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   stockBatchCreateSchema,
+  stockBatchUpdateSchema,
   type TStockBatchCreateSchema,
+  type TStockBatchUpdateSchema,
 } from "@repo/contracts/stock-batch";
 import StockBatchCreateForm from "@/components/custom/forms/stock-batch-create";
 import { getDefaultStockBatchCreateValues } from "@/constants/form-defaults/stock-batch";
@@ -52,7 +54,11 @@ import { catchError } from "@/lib/catch-error";
 import {
   useCreateStockBatchMutation,
   useDeleteStockBatchMutation,
+  useUpdateStockBatchMutation,
 } from "@/controllers/stock-batch/mutation";
+import { getStockBatchRequest, type TStockBatch } from "@/controllers/stock-batch/api";
+import type { TPurchaseOrder } from "@/controllers/purchase-order/api";
+import { useRef, useState } from "react";
 import StockBatchItemList from "./_components/stock-batch-item-list";
 
 const pageLimits = [10, 20, 30, 40, 50];
@@ -71,6 +77,15 @@ export default function StockBatchesPage() {
     resolver: zodResolver(stockBatchCreateSchema),
     defaultValues: getDefaultStockBatchCreateValues(),
   });
+  const updateForm = useForm<TStockBatchUpdateSchema>({
+    resolver: zodResolver(stockBatchUpdateSchema),
+  });
+
+  const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
+  const activeUpdateBatch = useRef<number | null>(null);
+  const [activeBatchPurchaseOrders, setActiveBatchPurchaseOrders] = useState<
+    TPurchaseOrder[]
+  >([]);
   const { data: vendors, isLoading: isVendorLoading } = useGetAllVendorsQuery({
     query: "",
     limit: 500,
@@ -82,11 +97,54 @@ export default function StockBatchesPage() {
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
   const { mutateAsync: createBatch } = useCreateStockBatchMutation();
+  const { mutateAsync: updateBatch } = useUpdateStockBatchMutation();
   const { mutateAsync: deleteBatch } = useDeleteStockBatchMutation();
 
   const handleReceiveBatch = async (data: TStockBatchCreateSchema) => {
-    await catchError(createBatch(data));
+    const [err, res] = await catchError(createBatch(data));
+
+    if (err) return toast.error(err.message);
+
+    toast.success(res.data.message);
     createForm.reset(getDefaultStockBatchCreateValues());
+  };
+
+  const handleEditBatchButtonClick = async (id: number) => {
+    const [err, res] = await catchError(getStockBatchRequest({ id }));
+    if (err) return toast.error(err.message);
+
+    const btn = updateEntryButtonRef.current;
+    const { data } = res.data;
+    if (btn && data) {
+      activeUpdateBatch.current = id;
+      setActiveBatchPurchaseOrders(data.list.purchaseOrder.map((po) => po.order));
+      btn.click();
+      updateForm.reset({
+        batchNumber: data.batch.batchNumber,
+        purchaseOrderId: data.batch.purchaseOrder.id,
+        arrivalDate: new Date(data.batch.arrivalDate),
+        purchaseItems: data.batch.items.map((item) => ({
+          purchaseItemId: item.purchaseOrderItemId,
+          quantityReceived: item.quantity,
+        })),
+      });
+    }
+  };
+
+  const handleUpdateBatch = async (data: TStockBatchUpdateSchema) => {
+    if (!activeUpdateBatch.current) return;
+
+    const [err, res] = await catchError(
+      updateBatch({
+        id: activeUpdateBatch.current,
+        payload: data,
+      }),
+    );
+
+    if (err) return toast.error(err.message);
+
+    toast.success(res.data.message);
+    activeUpdateBatch.current = null;
   };
 
   const handleDeleteBatch = async (id: number) => {
@@ -143,6 +201,25 @@ export default function StockBatchesPage() {
             <Plus className="h-4 w-4" strokeWidth={2} />
             <span className="font-medium">Receive Batch</span>
           </Button>
+        </ControlledFormDialog>
+        <ControlledFormDialog
+          form={updateForm}
+          onSubmit={handleUpdateBatch}
+          FormComponent={({ form, onSubmit }) => (
+            <StockBatchCreateForm
+              form={form}
+              onSubmit={onSubmit}
+              defaultList={{
+                purchaseOrders: activeBatchPurchaseOrders,
+              }}
+            />
+          )}
+          heading={{
+            title: "Update Stock Batch",
+            description: "Modify existing stock batch details",
+          }}
+        >
+          <Button className="hidden" ref={updateEntryButtonRef}></Button>
         </ControlledFormDialog>
       </div>
 
@@ -272,6 +349,7 @@ export default function StockBatchesPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleEditBatchButtonClick(sb.id)}
                       >
                         <Edit className="h-4 w-4" strokeWidth={1.5} />
                       </Button>

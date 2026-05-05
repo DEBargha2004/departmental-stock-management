@@ -72,6 +72,7 @@ import {
 } from "@/components/ui/dialog";
 import PurchaseOrderItemList from "./_components/purchase-order-item-list";
 import type { TProduct } from "@/controllers/product/api";
+import type { TVendor } from "@/controllers/vendor/api";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -85,9 +86,10 @@ export default function PurchaseOrdersPage() {
   });
   const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
   const activeUpdatePO = useRef<number | null>(null);
-  const [activePurchaseOrderItems, setActivePurchaseOrderItems] = useState<
-    TProduct[]
-  >([]);
+  const [activePurchaseOrderItems, setActivePurchaseOrderItems] = useState<{
+    product: TProduct[];
+    vendor: TVendor[];
+  }>({ product: [], vendor: [] });
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
@@ -173,11 +175,16 @@ export default function PurchaseOrdersPage() {
   const handleUpdatePO = async (data: TPurchaseOrderUpdateSchema) => {
     if (!activeUpdatePO.current) return;
 
-    await updatePO({
-      id: activeUpdatePO.current,
-      payload: data,
-    });
+    const [err, res] = await catchError(
+      updatePO({
+        id: activeUpdatePO.current,
+        payload: data,
+      }),
+    );
 
+    if (err) return toast.error(err.message);
+
+    toast.success(res.data.message);
     activeUpdatePO.current = null;
   };
 
@@ -223,7 +230,8 @@ export default function PurchaseOrdersPage() {
               form={form}
               onSubmit={onSubmit}
               defaultList={{
-                products: activePurchaseOrderItems,
+                products: activePurchaseOrderItems.product,
+                vendors: activePurchaseOrderItems.vendor,
               }}
             />
           )}

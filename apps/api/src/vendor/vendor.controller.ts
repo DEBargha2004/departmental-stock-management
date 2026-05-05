@@ -20,6 +20,8 @@ import { VendorService } from './vendor.service';
 import { ResponseBuilder } from 'src/lib/response';
 import { Auth } from 'src/authentication/auth.guard';
 import type { STATUS } from '@repo/contracts/status';
+import { CurrentUser } from 'src/user/user.decorator';
+import type { TJWTPayload } from 'src/authentication/auth.service';
 
 @Controller('vendor')
 export class VendorController {
@@ -30,8 +32,9 @@ export class VendorController {
   async createVendor(
     @Body(new ZodValidationPipe(vendorCreateSchema))
     payload: TVendorCreateSchema,
+    @CurrentUser() user: TJWTPayload,
   ) {
-    const res = await this.vendorService.createVendor(payload);
+    const res = await this.vendorService.createVendor(payload, user);
     return ResponseBuilder.success(res, 'Vendor created successfully');
   }
 
@@ -41,15 +44,19 @@ export class VendorController {
     @Param('id', ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(vendorUpdateSchema))
     payload: TVendorUpdateSchema,
+    @CurrentUser() user: TJWTPayload,
   ) {
-    const res = await this.vendorService.updateVendor(id, payload);
+    const res = await this.vendorService.updateVendor(id, payload, user);
     return ResponseBuilder.success(res, 'Vendor updated successfully');
   }
 
   @Auth('vendor.delete')
   @Delete(':id')
-  async deleteVendor(@Param('id', ParseIntPipe) id: number) {
-    await this.vendorService.deleteVendor(id);
+  async deleteVendor(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: TJWTPayload,
+  ) {
+    await this.vendorService.deleteVendor(id, user);
     return ResponseBuilder.success(null, 'Vendor deleted successfully');
   }
 

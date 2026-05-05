@@ -9,6 +9,7 @@ import type {
 import { api } from "@/lib/axios";
 import { PURCHASE_ORDER_STATUS } from "@repo/contracts/status";
 import type { TProduct } from "../product/api";
+import type { TVendor } from "../vendor/api";
 
 export type TPurchaseOrder = {
   id: number;
@@ -57,12 +58,13 @@ export async function deletePurchaseOrderRequest({
   return api.delete(`/inventory/purchase-order/${id}`);
 }
 
-export async function getPurchaseOrderRequest({
-  id,
-}: {
-  id: number;
-}): Promise<
-  AxiosResponse<TSuccess<{ order: TPurchaseOrder; list: TProduct[] }>>
+export async function getPurchaseOrderRequest({ id }: { id: number }): Promise<
+  AxiosResponse<
+    TSuccess<{
+      order: TPurchaseOrder;
+      list: { product: TProduct[]; vendor: TVendor[] };
+    }>
+  >
 > {
   return api.get(`/inventory/purchase-order/${id}`);
 }

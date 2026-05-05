@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import type { TUserUpdateSchema } from '@repo/contracts/user';
 import type { TSignIn } from '@repo/contracts/sign-in';
-import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
+import {
+  DATABASE_MODULE,
+  type TDB,
+  type Transaction,
+} from 'src/database/db.module';
 import { UserService } from 'src/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { and, eq, gt } from 'drizzle-orm';
@@ -21,6 +25,7 @@ import { AuthorizationService } from 'src/authorization/authorization.service';
 import { Role } from '@repo/contracts/roles';
 
 export type TJWTPayload = TUserUpdateSchema & { id: number; role: Role };
+export type TSystemAuthPayload = { id: null; name: 'SYSTEM' };
 
 @Injectable()
 export class AuthService {
@@ -78,9 +83,10 @@ export class AuthService {
     return res;
   }
 
-  async createCredentials(userId: number, password: string) {
+  async createCredentials(userId: number, password: string, trx?: Transaction) {
+    const db = trx ?? this.db;
     const passwordHash = await this.hashPassword(password);
-    const [res] = await this.db
+    const [res] = await db
       .insert(credentials)
       .values({
         userId,
@@ -93,9 +99,10 @@ export class AuthService {
     return res;
   }
 
-  async updateCredentials(userId: number, password: string) {
+  async updateCredentials(userId: number, password: string, trx?: Transaction) {
+    const db = trx ?? this.db;
     const passwordHash = await this.hashPassword(password);
-    const [res] = await this.db
+    const [res] = await db
       .update(credentials)
       .set({ password: passwordHash })
       .where(eq(credentials.userId, userId))
@@ -190,7 +197,8 @@ export class AuthService {
       .where(eq(resetPasswordToken.id, resetPasswordEntry.id));
   }
 
-  async deleteCredentials(userId: number) {
-    await this.db.delete(credentials).where(eq(credentials.userId, userId));
+  async deleteCredentials(userId: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+    await db.delete(credentials).where(eq(credentials.userId, userId));
   }
 }

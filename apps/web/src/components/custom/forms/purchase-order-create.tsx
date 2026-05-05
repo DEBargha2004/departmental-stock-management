@@ -44,6 +44,7 @@ import { Separator } from "@/components/ui/separator";
 
 import type { TVendor } from "@/controllers/vendor/api";
 import { useDebounce } from "@/hooks/use-debounce";
+import { formatDateForInput } from "@/lib/utils";
 
 export default function CreatePurchaseOrderForm({
   form,
@@ -69,13 +70,18 @@ export default function CreatePurchaseOrderForm({
 
   const { data: vendorsData, isLoading: isLoadingVendors } =
     useGetAllVendorsQuery({
-      limit: 100,
+      limit: 20,
       page: 1,
       status: "active",
       query: debouncedVendorsQuery,
     });
 
-  const vendors = vendorsData?.data?.data?.list || [];
+  const vendors =
+    (query.vendors
+      ? vendorsData?.data?.data?.list
+      : defaultList?.vendors?.length
+        ? defaultList?.vendors
+        : vendorsData?.data?.data?.list) ?? [];
 
   const selectedVendorId = useWatch({
     control: form.control,
@@ -232,11 +238,11 @@ export default function CreatePurchaseOrderForm({
                   Order Date
                 </FormLabel>
                 <FormControl>
-                  {/**@ts-ignore */}
                   <Input
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
+                    value={formatDateForInput(field.value)}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
