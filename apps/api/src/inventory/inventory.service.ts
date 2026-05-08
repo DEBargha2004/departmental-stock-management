@@ -26,20 +26,11 @@ import {
 } from '@repo/contracts/purchase-order';
 import { PurchaseOrder, PurchaseOrderService } from './purchase-order.service';
 import { VendorService } from 'src/vendor/vendor.service';
-import { StockBatchService, TStockBatch } from './stock-batch.service';
+import { StockBatchService } from './stock-batch.service';
 import {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
 } from '@repo/contracts/stock-batch';
-import {
-  purchaseOrder,
-  purchaseOrderItems,
-  stockBatch,
-  stockBatchItems,
-} from './purchase-order.schema';
-import { eq, sql } from 'drizzle-orm';
-import { vendor } from 'src/vendor/vendor.schema';
-import { product } from './product.schema';
 
 @Injectable()
 export class InventoryService {
