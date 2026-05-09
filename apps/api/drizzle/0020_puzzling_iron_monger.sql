@@ -1,1 +1,0 @@
-ALTER TABLE "audit_log" ALTER COLUMN "actor_type" SET DEFAULT 'user';

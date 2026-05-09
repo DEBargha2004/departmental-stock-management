@@ -7,43 +7,7 @@ import { pgTable } from 'drizzle-orm/pg-core';
 import { user } from 'src/user/user.schema';
 import type { MOVEMENT_TYPE } from '@repo/contracts/status';
 import { product } from './product.schema';
-
-export const issueItem = pgTable(
-  'issue_item',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    productId: integer('product_id')
-      .notNull()
-      .references(() => product.id),
-    quantity: integer('quantity').notNull(),
-    issuedBy: integer('issued_by')
-      .notNull()
-      .references(() => user.id),
-
-    issuedTo: integer('issued_to')
-      .notNull()
-      .references(() => user.id),
-
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-  },
-  (table) => [check('issue_item_quantity_check', sql`${table.quantity} > 0`)],
-);
-
-export const returnItem = pgTable(
-  'return_item',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    issueItemId: integer('issue_item_id')
-      .notNull()
-      .references(() => issueItem.id),
-
-    quantityReceived: integer('quantity_received').notNull(),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-  },
-  (table) => [
-    check('return_item_quantity_check', sql`${table.quantityReceived} > 0`),
-  ],
-);
+import { boolean } from 'drizzle-orm/pg-core';
 
 export const stock = pgTable(
   'stock',
@@ -78,6 +42,7 @@ export const stockMovement = pgTable('stock_movement', {
 export type TDBStockMovement = typeof stockMovement.$inferInsert;
 export type TDBStock = typeof stock.$inferInsert;
 
+export * from './circulation.schema';
 export * from './category.schema';
 export * from './product.schema';
 export * from './purchase-order.schema';

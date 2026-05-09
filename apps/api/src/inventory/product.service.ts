@@ -1,5 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
+import {
+  DATABASE_MODULE,
+  type TDB,
+  type Transaction,
+} from 'src/database/db.module';
 import {
   TProductUpdateSchema,
   type TProductCreateSchema,
@@ -46,13 +50,19 @@ export class ProductService {
         categoryId: payload.categoryId,
         imageUrl: payload.imageUrl,
         price: payload.price,
+        description: payload.description,
+        isConsumable: payload.isConsumable,
       })
       .returning();
 
     return pr;
   }
 
-  async updateProduct(id: number, payload: TProductUpdateSchema, trx?: Transaction) {
+  async updateProduct(
+    id: number,
+    payload: TProductUpdateSchema,
+    trx?: Transaction,
+  ) {
     const db = trx ?? this.db;
     const [pr] = await db
       .update(product)
@@ -61,6 +71,8 @@ export class ProductService {
         categoryId: payload.categoryId,
         imageUrl: payload.imageUrl,
         price: payload.price,
+        description: payload.description,
+        isConsumable: payload.isConsumable,
       })
       .where(eq(product.id, id))
       .returning();
@@ -75,6 +87,7 @@ export class ProductService {
         id: product.id,
         name: product.name,
         description: product.description,
+        isConsumable: product.isConsumable,
         imageUrl: product.imageUrl,
         price: product.price,
         category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
@@ -110,6 +123,7 @@ export class ProductService {
         description: product.description,
         imageUrl: product.imageUrl,
         price: product.price,
+        isConsumable: product.isConsumable,
         category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
           'id', ${category.id},
           'name', ${category.name},
@@ -134,13 +148,10 @@ export class ProductService {
     return list;
   }
 
-  async getProducts({
-    query = '',
-    limit = 20,
-    page = 1,
-    category: cat,
-    status,
-  }: TProductQuery, trx?: Transaction) {
+  async getProducts(
+    { query = '', limit = 20, page = 1, category: cat, status }: TProductQuery,
+    trx?: Transaction,
+  ) {
     const db = trx ?? this.db;
     const baseQuery = db
       .select({
@@ -149,6 +160,7 @@ export class ProductService {
         description: product.description,
         imageUrl: product.imageUrl,
         price: product.price,
+        isConsumable: product.isConsumable,
         category: sql<TCategoryForProduct>`JSON_BUILD_OBJECT(
           'id', ${category.id},
           'name', ${category.name},

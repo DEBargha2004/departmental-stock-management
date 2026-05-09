@@ -9,6 +9,8 @@ import {
   ScrollText,
   Store,
   UsersRound,
+  ClipboardList,
+  RotateCcw,
 } from "lucide-react";
 
 export const sidebarItems = [
@@ -71,6 +73,24 @@ export const sidebarItems = [
     icon: Package,
     label: "Stock Batches",
     href: "/stock-batches",
+    isActive(path) {
+      return path === this.href;
+    },
+  },
+  {
+    id: "issue_requests",
+    icon: ClipboardList,
+    label: "Issue Requests",
+    href: "/issue-requests",
+    isActive(path) {
+      return path === this.href;
+    },
+  },
+  {
+    id: "return_requests",
+    icon: RotateCcw,
+    label: "Return Requests",
+    href: "/return-requests",
     isActive(path) {
       return path === this.href;
     },

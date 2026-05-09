@@ -14,6 +14,9 @@ import ActivityLogPage from "./pages/activity-log/index";
 import PurchaseOrdersPage from "./pages/purchase-orders/index";
 import StockBatchesPage from "./pages/stock-batches/index";
 import AuthorizationLayout from "./layouts/authorization-layout";
+import IssueRequestsPage from "./pages/issue-requests/index";
+import ReturnRequestsPage from "./pages/return-requests/index";
+
 
 export const router = createBrowserRouter([
   {
@@ -102,6 +105,22 @@ export const router = createBrowserRouter([
             Component: () => (
               <AuthorizationLayout module="activity_log">
                 <ActivityLogPage />
+              </AuthorizationLayout>
+            ),
+          },
+          {
+            path: "/issue-requests",
+            Component: () => (
+              <AuthorizationLayout module="issue_requests">
+                <IssueRequestsPage />
+              </AuthorizationLayout>
+            ),
+          },
+          {
+            path: "/return-requests",
+            Component: () => (
+              <AuthorizationLayout module="return_requests">
+                <ReturnRequestsPage />
               </AuthorizationLayout>
             ),
           },

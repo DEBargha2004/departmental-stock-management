@@ -44,3 +44,7 @@ export type TAuditLogQuery = TQuery & {
   action?: AUDIT_ACTION | null;
   entity?: ENTITY_TYPE | null;
 };
+
+export type TIssueRequestQuery = TQuery;
+
+export type TReturnRequestQuery = TQuery;

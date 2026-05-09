@@ -10,7 +10,7 @@ import type {
 import type { AxiosResponse } from "axios";
 import type { TUserQuery } from "@repo/contracts/query";
 
-type TUser = {
+export type TUser = {
   id: number;
   name: string;
   email: string;

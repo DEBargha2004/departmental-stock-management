@@ -13,7 +13,7 @@ export const ROLE_ACCESS_LIST = [
   },
   {
     role: 'faculty',
-    modules: ['products', 'users'],
+    modules: ['products', 'users', 'issue_requests', 'return_requests'],
   },
   {
     role: 'student',

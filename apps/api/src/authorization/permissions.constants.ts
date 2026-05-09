@@ -39,6 +39,16 @@ export const PERMISSIONS = {
   STOCK_BATCH_DELETE: 'stock-batch.delete',
 
   AUDIT_READ: 'audit.read',
+
+  ISSUE_REQUEST_CREATE: 'issue-request.create',
+  ISSUE_REQUEST_READ: 'issue-request.read',
+  ISSUE_REQUEST_UPDATE: 'issue-request.update',
+  ISSUE_REQUEST_DELETE: 'issue-request.delete',
+
+  RETURN_REQUEST_CREATE: 'return-request.create',
+  RETURN_REQUEST_READ: 'return-request.read',
+  RETURN_REQUEST_UPDATE: 'return-request.update',
+  RETURN_REQUEST_DELETE: 'return-request.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

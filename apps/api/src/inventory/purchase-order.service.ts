@@ -211,7 +211,7 @@ export class PurchaseOrderService {
             GREATEST(
               SIMILARITY(${purchaseOrder.invoiceId}, ${query}),
               SIMILARITY(${vendor.name}, ${query}),
-              SIMILARITY(${product.name}, ${query})
+              MAX(SIMILARITY(${product.name}, ${query}))
             )
           `,
             )

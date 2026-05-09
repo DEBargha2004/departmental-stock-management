@@ -16,13 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Edit, Trash2, Eye, Plus, Box } from "lucide-react";
+import { Search, Edit, Trash2, Eye, Plus, Box, Zap } from "lucide-react";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { catchError } from "@/lib/catch-error";
 import { toast } from "sonner";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Badge } from "@/components/ui/badge";
+
 import {
   Pagination,
   PaginationContent,
@@ -135,10 +138,12 @@ export default function ProductsPage() {
       btn.click();
       updateForm.reset({
         name: data?.name ?? "",
+        description: data?.description ?? "",
         imageUrl: data?.imageUrl ?? "",
         categoryId: data?.category?.id,
         price: data?.price ?? 0,
         minStockLevel: data?.stock?.minStockLevel ?? 0,
+        isConsumable: data?.isConsumable ?? false,
       });
     }
   };
@@ -337,10 +342,30 @@ export default function ProductsPage() {
                   className="group hover:bg-muted/40 transition-colors border-input/40"
                 >
                   <TableCell className="py-3">
-                    <div className="flex flex-col space-y-0.5">
-                      <span className="font-medium text-sm">{item.name}</span>
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm">{item.name}</span>
+                        {item.isConsumable && (
+                          <Badge
+                            variant="secondary"
+                            className="h-4 px-1.5 text-[8px] uppercase tracking-tighter bg-primary/10 text-primary border-primary/20 font-black gap-0.5"
+                          >
+                            <Zap className="h-2 w-2 fill-primary" />
+                            Consumable
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/60 font-mono">
+                        ID: {item.id}
+                      </span>
+                      {item.description && (
+                        <p className="text-[10px] text-muted-foreground/80 line-clamp-1 max-w-[200px]">
+                          {item.description}
+                        </p>
+                      )}
                     </div>
                   </TableCell>
+
                   <TableCell className="py-3 text-sm text-muted-foreground">
                     {item.category?.name ?? "-"}
                   </TableCell>

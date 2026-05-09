@@ -15,7 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useGetAllCategoriesQuery } from "@/controllers/category/query";
+
 import type { TFormProps } from "@/types/form-props";
 import type { TProductCreateSchema } from "@repo/contracts/item";
 import {
@@ -28,9 +31,12 @@ import {
   ChevronRight,
   Plus,
   Image as ImageIcon,
+  CheckCircle2,
+  AlignLeft,
 } from "lucide-react";
 import UploadImage from "../upload-image";
-import { getUploader } from "@/lib/uploader";
+import { useProductImageUpload } from "@/controllers/upload/mutation";
+
 
 export default function ProductCreateForm({
   form,
@@ -43,7 +49,8 @@ export default function ProductCreateForm({
     });
 
   const categoryList = categories?.data?.data?.list ?? [];
-  const uploader = getUploader(`/upload/product-image`);
+  const { uploadProductImage, isPending: isUploading } = useProductImageUpload();
+
 
   return (
     <Form {...form}>
@@ -108,6 +115,57 @@ export default function ProductCreateForm({
               </FormItem>
             )}
           />
+
+          <div className="md:col-span-2">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/70 tracking-widest mb-2 flex items-center gap-2">
+                    <AlignLeft className="h-3 w-3" />
+                    Description
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Briefly describe the product..."
+                      className="min-h-[80px] max-h-[160px] field-sizing-content bg-background border-border/60 focus:bg-background transition-all font-medium text-sm py-2.5 resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="bg-muted/10 p-5 rounded-2xl border border-border/50">
+          <FormField
+            control={form.control}
+            name="isConsumable"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 bg-background/50">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-sm font-bold flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Consumable Item
+                  </FormLabel>
+                  <p className="text-[10px] text-muted-foreground font-medium">
+                    Consumable items are one-time use and don't need to be
+                    returned.
+                  </p>
+                </div>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="h-5 w-5 rounded-md border-primary/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </div>
 
         <div className="bg-muted/10 p-5 rounded-2xl border border-border/50">
@@ -124,8 +182,10 @@ export default function ProductCreateForm({
                   <UploadImage
                     value={field.value}
                     onValueChange={field.onChange}
-                    uploader={uploader}
+                    uploader={uploadProductImage}
+                    isUploading={isUploading}
                   />
+
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>

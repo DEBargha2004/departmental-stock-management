@@ -96,10 +96,6 @@ export class StockBatchService {
       .groupBy(stockBatch.id, purchaseOrder.id, vendor.id)
       .where(eq(stockBatch.id, id));
 
-    if (!res) {
-      throw new NotFoundException('Stock Batch not found');
-    }
-
     return res;
   }
 

@@ -1,1 +1,0 @@
-ALTER TABLE "purchase_order_items" DROP COLUMN "deleted_at";

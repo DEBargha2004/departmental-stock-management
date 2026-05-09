@@ -15,6 +15,10 @@ export const PURCHASE_ORDER_STATUS = {
   CANCELLED: "cancelled",
 } as const;
 
+
+
+
+
 export const MOVEMENT_TYPE = {
   ISSUE: "issue",
   RETURN: "return",
@@ -41,6 +45,8 @@ export const ENTITY_TYPE = {
   RETURN_ITEM: "return_item",
   STOCK: "stock",
   VENDOR: "vendor",
+  ISSUE_REQUEST: "issue_request",
+  RETURN_REQUEST: "return_request",
 } as const;
 
 export const ACTOR_TYPE = {
@@ -54,6 +60,9 @@ export type PRODUCT_STATUS =
 export type MOVEMENT_TYPE = (typeof MOVEMENT_TYPE)[keyof typeof MOVEMENT_TYPE];
 export type PURCHASE_ORDER_STATUS =
   (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
+
+
+
 export type AUDIT_ACTION = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 export type ENTITY_TYPE = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];
 export type ACTOR_TYPE = (typeof ACTOR_TYPE)[keyof typeof ACTOR_TYPE];
@@ -61,6 +70,9 @@ export type ACTOR_TYPE = (typeof ACTOR_TYPE)[keyof typeof ACTOR_TYPE];
 export const STATUS_LIST = Object.values(STATUS);
 export const PRODUCT_STATUS_LIST = Object.values(PRODUCT_STATUS);
 export const PURCHASE_ORDER_STATUS_LIST = Object.values(PURCHASE_ORDER_STATUS);
+
+
+
 export const MOVEMENT_TYPE_LIST = Object.values(MOVEMENT_TYPE);
 export const AUDIT_ACTION_LIST = Object.values(AUDIT_ACTION);
 export const ENTITY_TYPE_LIST = Object.values(ENTITY_TYPE);
@@ -106,6 +118,10 @@ export const PURCHASE_ORDER_STATUS_FORMATTED = [
     label: "Cancelled",
   },
 ] as const satisfies { id: PURCHASE_ORDER_STATUS; label: string }[];
+
+
+
+
 
 export const MOVEMENT_TYPE_FORMATTED = [
   {
@@ -183,6 +199,18 @@ export const ENTITY_TYPE_FORMATTED = [
     id: "stock",
     label: "Stock",
   },
+  {
+    id: "vendor",
+    label: "Vendor",
+  },
+  {
+    id: "issue_request",
+    label: "Issue Request",
+  },
+  {
+    id: "return_request",
+    label: "Return Request",
+  },
 ] as const satisfies { id: ENTITY_TYPE; label: string }[];
 
 export const ACTOR_TYPE_FORMATTED = [
@@ -207,6 +235,10 @@ export const getProductStatusObject = (status: PRODUCT_STATUS) => {
 export const getPurchaseOrderStatusObject = (status: PURCHASE_ORDER_STATUS) => {
   return PURCHASE_ORDER_STATUS_FORMATTED.find((s) => s.id === status)!;
 };
+
+
+
+
 
 export const getMovementTypeObject = (type: MOVEMENT_TYPE) => {
   return MOVEMENT_TYPE_FORMATTED.find((t) => t.id === type)!;

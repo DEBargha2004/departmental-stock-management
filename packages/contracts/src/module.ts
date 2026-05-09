@@ -7,6 +7,8 @@ export const MODULE = {
   PURCHASE_ORDERS: "purchase_orders",
   STOCK_BATCHES: "stock_batches",
   ACTIVITY_LOG: "activity_log",
+  ISSUE_REQUESTS: "issue_requests",
+  RETURN_REQUESTS: "return_requests",
 } as const;
 
 export type MODULE = (typeof MODULE)[keyof typeof MODULE];

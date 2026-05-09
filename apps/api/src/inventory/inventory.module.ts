@@ -11,6 +11,8 @@ import { PurchaseOrderController } from './purchase-order.controller';
 import { StockBatchController } from './stock-batch.controller';
 import { StockBatchService } from './stock-batch.service';
 import { AuditModule } from 'src/audit/audit.module';
+import { CirculationController } from './circulation.controller';
+import { CirculationService } from './circulation.service';
 
 @Module({
   controllers: [
@@ -18,6 +20,7 @@ import { AuditModule } from 'src/audit/audit.module';
     ItemController,
     PurchaseOrderController,
     StockBatchController,
+    CirculationController,
   ],
   imports: [VendorModule, AuditModule],
   providers: [
@@ -27,6 +30,7 @@ import { AuditModule } from 'src/audit/audit.module';
     StockService,
     PurchaseOrderService,
     StockBatchService,
+    CirculationService,
   ],
   exports: [InventoryService, PurchaseOrderService],
 })

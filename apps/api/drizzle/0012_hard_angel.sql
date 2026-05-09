@@ -1,1 +1,0 @@
-ALTER TABLE "stock_batch" ADD COLUMN "arrival_date" date NOT NULL;

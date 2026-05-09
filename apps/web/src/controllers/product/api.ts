@@ -23,6 +23,7 @@ export type TProduct = {
     quantity: number;
     minStockLevel: number;
   };
+  isConsumable: boolean;
 };
 
 export async function createItemRequest(
