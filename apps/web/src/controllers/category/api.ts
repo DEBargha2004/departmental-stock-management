@@ -1,18 +1,14 @@
 import { api } from "@/lib/axios";
 import type { PaginatedListResponse } from "@/types/list-response";
 import type { TSuccess } from "@/types/response";
-import type { TCategoryCreateSchema } from "@repo/contracts/category";
+import type {
+  TCategoryCreateSchema,
+  TCategory,
+} from "@repo/contracts/category";
 import type { TCategoryQuery } from "@repo/contracts/query";
 import type { AxiosResponse } from "axios";
 
-type TCategory = {
-  id: number;
-  name: string;
-  description: string;
-  isActive: boolean;
-  createdAt: Date;
-  itemsCount: number;
-};
+
 
 export async function createCategoryRequest(
   data: TCategoryCreateSchema,
@@ -47,12 +43,13 @@ export async function getAllCategoriesRequest({
 }: TCategoryQuery): Promise<
   AxiosResponse<TSuccess<PaginatedListResponse<TCategory[]>>>
 > {
-  return api.get(
-    `/inventory/category/list?${new URLSearchParams({
-      query: query || "",
-      status: status || "",
-      limit: limit.toString(),
-      page: page.toString(),
-    }).toString()}`,
-  );
+  return api.get(`/inventory/category/list`, {
+    params: {
+      query,
+      status,
+      limit,
+      page,
+    },
+  });
 }
+

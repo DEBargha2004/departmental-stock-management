@@ -3,32 +3,18 @@ import type { TSuccess } from "@/types/response";
 import type { TIssueRequestQuery } from "@repo/contracts/query";
 import type { AxiosResponse } from "axios";
 import type {
+  TIssueRequest,
   TIssueRequestCreateSchema,
   TIssueRequestUpdateSchema,
-} from "@repo/contracts/issue-request";
+} from "@repo/contracts/circulation";
 import { api } from "@/lib/axios";
-import type { TUser } from "../user/api";
-
-export type TIssueRequest = {
-  id: number;
-  issueDate: Date;
-  user: TUser;
-  items: TIssueRequestItem[];
-};
-
-export type TIssueRequestItem = {
-  id: number;
-  quantity: number;
-  product: {
-    id: number;
-    name: string;
-  };
-};
+import type { TUser } from "@repo/contracts/user";
+import type { TProduct } from "@repo/contracts/item";
 
 export async function createIssueRequestRequest(
   data: TIssueRequestCreateSchema,
 ): Promise<AxiosResponse<TSuccess<null>>> {
-  return api.post("/inventory/issue-request/create", data);
+  return api.post("/inventory/circulation/issue-request", data);
 }
 
 export async function updateIssueRequestRequest({
@@ -38,7 +24,7 @@ export async function updateIssueRequestRequest({
   id: number;
   payload: TIssueRequestUpdateSchema;
 }): Promise<AxiosResponse<TSuccess<null>>> {
-  return api.patch(`/inventory/issue-request/${id}`, payload);
+  return api.patch(`/inventory/circulation/issue-request/${id}`, payload);
 }
 
 export async function deleteIssueRequestRequest({
@@ -46,27 +32,31 @@ export async function deleteIssueRequestRequest({
 }: {
   id: number;
 }): Promise<AxiosResponse<TSuccess<null>>> {
-  return api.delete(`/inventory/issue-request/${id}`);
+  return api.delete(`/inventory/circulation/issue-request/${id}`);
 }
 
 export async function getIssueRequestRequest({ id }: { id: number }): Promise<
   AxiosResponse<
     TSuccess<{
       request: TIssueRequest;
+      list: {
+        user: TUser;
+        products: TProduct[];
+      };
     }>
   >
 > {
-  return api.get(`/inventory/issue-request/${id}`);
+  return api.get(`/inventory/circulation/issue-request/${id}`);
 }
 
 export async function getAllIssueRequestsRequest({
   query = "",
-  limit,
-  page,
+  limit = 20,
+  page = 1,
 }: TIssueRequestQuery): Promise<
   AxiosResponse<TSuccess<PaginatedListResponse<TIssueRequest[]>>>
 > {
-  return api.get("/inventory/issue-request", {
+  return api.get("/inventory/circulation/issue-request", {
     params: {
       query,
       limit,

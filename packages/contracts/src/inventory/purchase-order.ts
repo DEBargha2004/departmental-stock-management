@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PURCHASE_ORDER_STATUS } from "../status.js";
 
 export const purchaseOrderCreateSchema = z
   .object({
@@ -46,3 +47,26 @@ export type TPurchaseOrderCreateSchema = z.infer<
 export type TPurchaseOrderUpdateSchema = z.infer<
   typeof purchaseOrderUpdateSchema
 >;
+
+export type TPurchaseOrderItem = {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  product: {
+    id: number;
+    name: string;
+  };
+};
+
+export type TPurchaseOrder = {
+  id: number;
+  invoiceId: string;
+  orderDate: Date;
+  status: PURCHASE_ORDER_STATUS;
+  totalAmount: number;
+  vendor: {
+    id: number;
+    name: string;
+  };
+  items: TPurchaseOrderItem[];
+};

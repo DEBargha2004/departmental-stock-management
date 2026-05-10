@@ -1,23 +1,12 @@
-import { API_URL } from "@/constants/api";
 import { api } from "@/lib/axios";
 import type { PaginatedListResponse } from "@/types/list-response";
 import type { TSuccess } from "@/types/response";
 import type { TAuditLogQuery } from "@repo/contracts/query";
 import type { AUDIT_ACTION, ENTITY_TYPE } from "@repo/contracts/status";
 import type { AxiosResponse } from "axios";
+import type { TAuditLog } from "@repo/contracts/audit";
 
-export type TAuditLog = {
-  id: number;
-  action: AUDIT_ACTION;
-  entityType: ENTITY_TYPE;
-  description: string | null;
-  createdAt: string;
-  user: {
-    id: number;
-    name: string;
-    email: string;
-  } | null;
-};
+
 
 export async function getAuditLogsRequest({
   query = "",
@@ -28,13 +17,14 @@ export async function getAuditLogsRequest({
 }: TAuditLogQuery): Promise<
   AxiosResponse<TSuccess<PaginatedListResponse<TAuditLog[]>>>
 > {
-  return api.get(
-    `${API_URL}/audit?${new URLSearchParams({
+  return api.get(`/audit`, {
+    params: {
       query,
-      ...(action && { action }),
-      ...(entity && { entity }),
-      limit: limit.toString(),
-      page: page.toString(),
-    }).toString()}`,
-  );
+      action,
+      entity,
+      limit,
+      page,
+    },
+  });
 }
+

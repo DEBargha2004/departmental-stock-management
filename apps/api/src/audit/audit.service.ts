@@ -4,6 +4,7 @@ import { auditLog, TDBAuditLog } from './audit.schema';
 import { TAuditLogQuery } from '@repo/contracts/query';
 import { user } from 'src/user/user.schema';
 import { and, count, desc, eq, gte, or, sql } from 'drizzle-orm';
+import type { TAuditLog } from '@repo/contracts/audit';
 
 type TUser = {
   id: number;
@@ -23,7 +24,7 @@ export class AuditService {
   async getAuditLogs(
     { page = 1, limit = 20, action, entity, query }: TAuditLogQuery,
     trx?: Transaction,
-  ) {
+  ): Promise<{ list: TAuditLog[]; count: number }> {
     const db = trx ?? this.db;
     const offset = (page - 1) * limit;
 
@@ -77,6 +78,6 @@ export class AuditService {
       countQuery,
     ]);
 
-    return { list: logs, count: totalCount };
+    return { list: logs as unknown as TAuditLog[], count: totalCount };
   }
 }

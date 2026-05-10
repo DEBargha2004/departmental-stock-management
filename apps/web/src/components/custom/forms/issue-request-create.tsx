@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { TFormProps } from "@/types/form-props";
-import type { TIssueRequestCreateSchema } from "@repo/contracts/issue-request";
+import type { TIssueRequestCreateSchema } from "@repo/contracts/circulation";
 import { useGetAllUsersQuery } from "@/controllers/user/query";
 import { useGetAllItemsQuery } from "@/controllers/product/query";
 import { useState } from "react";
@@ -35,12 +35,12 @@ import SearchableSelect, {
   SearchableSelectTrigger,
   SearchableSelectVacuum,
 } from "../searchable-select";
-import type { TProduct } from "@/controllers/product/api";
+import type { TProduct } from "@repo/contracts/item";
 import { getDefaultIssueRequestItemValues } from "@/constants/form-defaults/issue-request";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import type { TUser } from "@/controllers/user/api";
+import type { TUser } from "@repo/contracts/user";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatDateForInput } from "@/lib/utils";
 
@@ -250,7 +250,11 @@ export default function CreateIssueRequestForm({
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
             <div className="flex items-center gap-3">
-              <span>Create Issue Request</span>
+              <span>
+                {selectedUserId
+                  ? "Update Issue Request"
+                  : "Create Issue Request"}
+              </span>
               <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </div>
           )}

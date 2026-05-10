@@ -56,8 +56,8 @@ import {
   useDeleteStockBatchMutation,
   useUpdateStockBatchMutation,
 } from "@/controllers/stock-batch/mutation";
-import { getStockBatchRequest, type TStockBatch } from "@/controllers/stock-batch/api";
-import type { TPurchaseOrder } from "@/controllers/purchase-order/api";
+import { getStockBatchRequest } from "@/controllers/stock-batch/api";
+import type { TPurchaseOrder } from "@repo/contracts/purchase-order";
 import { useRef, useState } from "react";
 import StockBatchItemList from "./_components/stock-batch-item-list";
 
@@ -117,7 +117,9 @@ export default function StockBatchesPage() {
     const { data } = res.data;
     if (btn && data) {
       activeUpdateBatch.current = id;
-      setActiveBatchPurchaseOrders(data.list.purchaseOrder.map((po) => po.order));
+      setActiveBatchPurchaseOrders(
+        data.list.purchaseOrder.map((po) => po.order),
+      );
       btn.click();
       updateForm.reset({
         batchNumber: data.batch.batchNumber,

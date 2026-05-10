@@ -39,7 +39,7 @@ import {
   issueRequestUpdateSchema,
   type TIssueRequestCreateSchema,
   type TIssueRequestUpdateSchema,
-} from "@repo/contracts/issue-request";
+} from "@repo/contracts/circulation";
 import { getDefaultIssueRequestCreateValues } from "@/constants/form-defaults/issue-request";
 import {
   useCreateIssueRequestMutation,
@@ -56,9 +56,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { TProduct } from "@repo/contracts/item";
+import type { TUser } from "@repo/contracts/user";
 
 import IssueRequestItemList from "./_components/issue-item-list";
-import type { TProduct } from "@/controllers/product/api";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -71,6 +72,10 @@ export default function IssueRequestsPage() {
 
   const updateEntryButtonRef = useRef<HTMLButtonElement>(null);
   const activeUpdateId = useRef<number | null>(null);
+  const [activeIssueRequestItems, setActiveIssueRequestItems] = useState<{
+    products: TProduct[];
+    user: TUser | null;
+  }>({ products: [], user: null });
 
   const debouncedQuery = useDebounce(searchParams.query, 500);
 
@@ -89,7 +94,6 @@ export default function IssueRequestsPage() {
   });
 
   const { mutateAsync: createRequest } = useCreateIssueRequestMutation();
-
   const { mutateAsync: updateRequest } = useUpdateIssueRequestMutation();
   const { mutateAsync: deleteRequest } = useDeleteIssueRequestMutation();
 
@@ -115,7 +119,7 @@ export default function IssueRequestsPage() {
     const [err, res] = await catchError(createRequest(data));
     if (err) return toast.error(err.message);
     toast.success(res.data.message);
-    createForm.reset();
+    createForm.reset(getDefaultIssueRequestCreateValues());
   };
 
   const handleEditButtonClick = async (id: number) => {
@@ -126,11 +130,15 @@ export default function IssueRequestsPage() {
     const { data } = res.data;
     if (btn && data) {
       activeUpdateId.current = id;
+      setActiveIssueRequestItems({
+        products: data.list.products,
+        user: data.list.user,
+      });
 
       btn.click();
       updateForm.reset({
         issueDate: data.request.issueDate,
-        userId: data.request.user.id,
+        userId: data.request.issuedTo.id,
         items: data.request.items.map((item) => ({
           itemId: item.product.id,
           quantity: item.quantity,
@@ -185,7 +193,18 @@ export default function IssueRequestsPage() {
         <ControlledFormDialog
           form={updateForm}
           onSubmit={handleUpdate}
-          FormComponent={CreateIssueRequestForm}
+          FormComponent={({ form, onSubmit }) => (
+            <CreateIssueRequestForm
+              form={form}
+              onSubmit={onSubmit}
+              defaultList={{
+                products: activeIssueRequestItems.products,
+                users: activeIssueRequestItems.user
+                  ? [activeIssueRequestItems.user]
+                  : [],
+              }}
+            />
+          )}
           heading={{
             title: "Update Issue Request",
             description: "Modify existing issue request details",
@@ -222,9 +241,14 @@ export default function IssueRequestsPage() {
                 Issued To
               </TableHead>
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                Issued By
+              </TableHead>
+              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
                 Date
               </TableHead>
-
+              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-center h-11">
+                Items
+              </TableHead>
 
               <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
                 Actions
@@ -242,9 +266,16 @@ export default function IssueRequestsPage() {
                     <Skeleton className="h-5 w-32" />
                   </TableCell>
                   <TableCell className="py-3">
+                    <Skeleton className="h-5 w-32" />
+                  </TableCell>
+                  <TableCell className="py-3">
                     <Skeleton className="h-5 w-24" />
                   </TableCell>
-
+                  <TableCell className="py-3">
+                    <div className="flex justify-center">
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                  </TableCell>
                   <TableCell className="py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Skeleton className="h-8 w-8" />
@@ -261,15 +292,20 @@ export default function IssueRequestsPage() {
                   key={req.id}
                 >
                   <TableCell className="font-medium py-3 text-sm">
-                    #{req.id}
+                    {req.issueCode}
                   </TableCell>
                   <TableCell className="py-3 text-sm font-medium">
-                    {req.user.name}
+                    {req.issuedTo.name}
+                  </TableCell>
+                  <TableCell className="py-3 text-sm font-medium text-muted-foreground">
+                    {req.issuedBy.name}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-muted-foreground">
                     {formatDate(req.issueDate)}
                   </TableCell>
-
+                  <TableCell className="py-3 text-sm text-center font-medium">
+                    {req.items.length}
+                  </TableCell>
 
                   <TableCell className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
@@ -283,8 +319,13 @@ export default function IssueRequestsPage() {
                             <Eye className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
-                          <DialogTitle />
+                        <DialogContent className="max-w-2xl">
+                          <DialogTitle className="flex items-center gap-2">
+                            <span>Issue Request Details</span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                              ({req.issueCode})
+                            </span>
+                          </DialogTitle>
                           <IssueRequestItemList request={req} />
                         </DialogContent>
                       </Dialog>
@@ -320,10 +361,9 @@ export default function IssueRequestsPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={6}
                   className="h-64 text-center text-sm text-muted-foreground border-input/40"
                 >
-
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
                       <ClipboardList className="h-6 w-6 text-muted-foreground/50" />

@@ -1,5 +1,5 @@
 import z from "zod";
-import { ROLES } from "./auth/roles.js";
+import { ROLES, type Role } from "./auth/roles.js";
 
 export const userCreateSchema = z.object({
   name: z.string().nonempty(),
@@ -16,3 +16,11 @@ export const userUpdateSchema = z.object({
 
 export type TUserCreateSchema = z.infer<typeof userCreateSchema>;
 export type TUserUpdateSchema = z.infer<typeof userUpdateSchema>;
+
+export type TUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+};

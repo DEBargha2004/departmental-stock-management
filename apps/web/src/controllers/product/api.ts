@@ -4,27 +4,10 @@ import type { TSuccess } from "@/types/response";
 import type {
   TProductCreateSchema,
   TProductUpdateSchema,
+  TProduct,
 } from "@repo/contracts/item";
 import type { TProductQuery } from "@repo/contracts/query";
 import type { AxiosResponse } from "axios";
-
-export type TProduct = {
-  id: number;
-  name: string;
-  description: string;
-  imageUrl: string;
-  price: number;
-  category: {
-    id: number;
-    name: string;
-    description: string;
-  };
-  stock: {
-    quantity: number;
-    minStockLevel: number;
-  };
-  isConsumable: boolean;
-};
 
 export async function createItemRequest(
   data: TProductCreateSchema,
@@ -60,14 +43,13 @@ export async function getAllItemsRequest({
 }: TProductQuery): Promise<
   AxiosResponse<TSuccess<PaginatedListResponse<TProduct[]>>>
 > {
-  const params = new URLSearchParams({
-    query: query || "",
-    limit: limit.toString(),
-    page: page.toString(),
+  return api.get(`/inventory/item/list`, {
+    params: {
+      query,
+      limit,
+      page,
+      status,
+      category,
+    },
   });
-
-  if (status) params.append("status", status);
-  if (category) params.append("category", category.toString());
-
-  return api.get(`/inventory/item/list?${params.toString()}`);
 }

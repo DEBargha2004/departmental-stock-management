@@ -17,40 +17,16 @@ import { product } from './product.schema';
 import {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
+  type TStockBatch,
 } from '@repo/contracts/stock-batch';
 
-export type TStockBatch = {
-  id: number;
-  batchNumber: string;
-  arrivalDate: Date;
-  purchaseOrder: {
-    id: number;
-    invoiceId: string;
-    totalAmount: number;
-    status: string;
-    orderDate: Date;
-  };
-  vendor: {
-    id: number;
-    name: string;
-  };
-  items: {
-    id: number;
-    purchaseOrderItemId: number;
-    product: {
-      id: number;
-      name: string;
-    };
-    quantity: number;
-    unitPrice: number;
-  }[];
-};
+
 
 @Injectable()
 export class StockBatchService {
   constructor(@Inject(DATABASE_MODULE) private readonly db: TDB) {}
 
-  async getStockBatch(id: number, trx?: Transaction) {
+  async getStockBatch(id: number, trx?: Transaction): Promise<TStockBatch> {
     const db = trx ?? this.db;
     const [res] = await db
       .select({
@@ -96,7 +72,7 @@ export class StockBatchService {
       .groupBy(stockBatch.id, purchaseOrder.id, vendor.id)
       .where(eq(stockBatch.id, id));
 
-    return res;
+    return res as unknown as TStockBatch;
   }
 
   async getStockBatchByPurchaseOrder(poId: number, trx?: Transaction) {
@@ -204,7 +180,7 @@ export class StockBatchService {
       countQuery,
     ]);
 
-    return { list, count: totalCount };
+    return { list: list as unknown as TStockBatch[], count: totalCount };
   }
 
   async createStockBatch(payload: TStockBatchCreateSchema, trx?: Transaction) {

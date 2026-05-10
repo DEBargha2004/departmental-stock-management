@@ -5,40 +5,15 @@ import type { AxiosResponse } from "axios";
 import type {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
+  TStockBatch,
+  TStockBatchItem,
 } from "@repo/contracts/stock-batch";
 import { api } from "@/lib/axios";
-import type { TPurchaseOrder } from "../purchase-order/api";
-import type { TProduct } from "../product/api";
-import type { TVendor } from "../vendor/api";
+import type { TPurchaseOrder } from "@repo/contracts/purchase-order";
+import type { TProduct } from "@repo/contracts/item";
+import type { TVendor } from "@repo/contracts/vendor";
 
-export type TStockBatch = {
-  id: number;
-  batchNumber: string;
-  purchaseOrder: {
-    id: number;
-    invoiceId: string;
-    totalAmount: number;
-    status: string;
-    orderDate: Date;
-  };
-  vendor: {
-    id: number;
-    name: string;
-  };
-  arrivalDate: string;
-  items: TStockBatchItem[];
-};
 
-export type TStockBatchItem = {
-  id: number;
-  purchaseOrderItemId: number;
-  product: {
-    id: number;
-    name: string;
-  };
-  quantity: number;
-  unitPrice: number;
-};
 
 export async function createStockBatchRequest(
   data: TStockBatchCreateSchema,

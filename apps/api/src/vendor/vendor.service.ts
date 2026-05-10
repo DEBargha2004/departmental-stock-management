@@ -9,9 +9,10 @@ import {
   type TDB,
   type Transaction,
 } from 'src/database/db.module';
-import {
-  type TVendorCreateSchema,
-  type TVendorUpdateSchema,
+import type {
+  TVendorCreateSchema,
+  TVendorUpdateSchema,
+  TVendor,
 } from '@repo/contracts/vendor';
 import { vendor } from './vendor.schema';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
@@ -19,6 +20,7 @@ import { TVendorQuery } from '@repo/contracts/query';
 import { StockProcurementService } from 'src/stock-procurement/stock-procurement.service';
 import { AuditService } from 'src/audit/audit.service';
 import type { TJWTPayload } from 'src/authentication/auth.service';
+import { PaginatedListResponse } from 'src/global/types/response';
 
 @Injectable()
 export class VendorService {
@@ -126,7 +128,7 @@ export class VendorService {
     });
   }
 
-  async getVendor(id: number, trx?: Transaction) {
+  async getVendor(id: number, trx?: Transaction): Promise<TVendor> {
     const db = trx ?? this.db;
     const [res] = await db
       .select({
@@ -136,6 +138,7 @@ export class VendorService {
         phone: vendor.phone,
         email: vendor.email,
         address: vendor.address,
+        isActive: vendor.isActive,
       })
       .from(vendor)
       .where(and(eq(vendor.id, id), isNull(vendor.deletedAt)));
@@ -156,7 +159,7 @@ export class VendorService {
   async getVendors(
     { query, limit = 20, page = 1, status }: TVendorQuery,
     trx?: Transaction,
-  ) {
+  ): Promise<PaginatedListResponse<TVendor[]>> {
     const db = trx ?? this.db;
     const baseQuery = db
       .select({

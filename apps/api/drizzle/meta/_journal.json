@@ -8,6 +8,13 @@
       "when": 1778355919056,
       "tag": "0000_flowery_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778414461834,
+      "tag": "0001_worthless_penance",
+      "breakpoints": true
     }
   ]
 }

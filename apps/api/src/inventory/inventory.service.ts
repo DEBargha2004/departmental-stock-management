@@ -17,20 +17,31 @@ import type {
 import { TProductQuery } from '@repo/contracts/query';
 import { CategoryService } from './category.service';
 import { ProductService } from './product.service';
-import { StockService } from './stock.service';
+import { StockService, TProductForStockDetails } from './stock.service';
 import { AuditService } from 'src/audit/audit.service';
 import type { TJWTPayload } from 'src/authentication/auth.service';
 import {
+  TPurchaseOrder,
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
 } from '@repo/contracts/purchase-order';
-import { PurchaseOrder, PurchaseOrderService } from './purchase-order.service';
+import { PurchaseOrderService } from './purchase-order.service';
 import { VendorService } from 'src/vendor/vendor.service';
 import { StockBatchService } from './stock-batch.service';
 import {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
 } from '@repo/contracts/stock-batch';
+import {
+  TIssueRequestCreateSchema,
+  TIssueRequestItem,
+  TIssueRequestUpdateSchema,
+  TReturnRequestCreateSchema,
+  TReturnRequestItem,
+  TReturnRequestUpdateSchema,
+} from '@repo/contracts/circulation';
+import { UserService } from 'src/user/user.service';
+import { CirculationService } from './circulation.service';
 
 @Injectable()
 export class InventoryService {
@@ -43,6 +54,8 @@ export class InventoryService {
     private readonly vendorService: VendorService,
     private readonly stockBatchService: StockBatchService,
     private readonly purchaseOrderService: PurchaseOrderService,
+    private readonly userService: UserService,
+    private readonly circulationService: CirculationService,
   ) {}
 
   async createItem(
@@ -226,7 +239,7 @@ export class InventoryService {
     payload: TPurchaseOrderCreateSchema,
     user: TJWTPayload,
     trx?: Transaction,
-  ): Promise<PurchaseOrder> {
+  ): Promise<TPurchaseOrder> {
     const db = trx ?? this.db;
 
     const po = await db.transaction(async (tx) => {
@@ -475,7 +488,7 @@ export class InventoryService {
             (poIt) => poIt.id === item.purchaseItemId,
           )!;
           const existingStock = stockList.find(
-            (stock) => stock.productId === poItem.product.id,
+            (stock) => stock.product.id === poItem.product.id,
           )!;
           const totalQuantity =
             item.quantityReceived + existingStock.quantityAvailable;
@@ -599,7 +612,7 @@ export class InventoryService {
           )!;
 
           const currentStock = stockList.find(
-            (s) => s.productId === poItem.product.id,
+            (s) => s.product.id === poItem.product.id,
           );
 
           const quantityDelta = item.quantityReceived - sbItem.quantity;
@@ -662,7 +675,9 @@ export class InventoryService {
 
       await this.stockService.updateStockMetadata(
         existingBatch.items.map((item) => {
-          const stock = stockList.find((s) => s.productId === item.product.id)!;
+          const stock = stockList.find(
+            (s) => s.product.id === item.product.id,
+          )!;
 
           return {
             productId: item.product.id,
@@ -681,6 +696,783 @@ export class InventoryService {
           entityId: id,
           entityType: 'stock_batch',
           description: `Deleted stock batch with id ${id}`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
+  }
+
+  async createIssueRequest(
+    data: TIssueRequestCreateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+
+    await db.transaction(async (tx) => {
+      const issuedToInfo = await this.userService.getUserById(data.userId, tx);
+      if (!issuedToInfo) {
+        throw new NotFoundException(`User with id ${data.userId} not found`);
+      }
+
+      const stockList = await this.stockService.getStockDetailsList(
+        data.items.map((i) => i.itemId),
+        tx,
+      );
+
+      const nonExistingProducts: TProductForStockDetails[] = [];
+
+      // check for existance of product
+      for (const item of data.items) {
+        const stock = stockList.find((s) => s.product.id === item.itemId);
+        if (!stock) {
+          nonExistingProducts.push(stock.product);
+        }
+      }
+
+      if (nonExistingProducts.length > 0) {
+        throw new NotFoundException(
+          `Product ${nonExistingProducts.map((p) => p.name).join(', ')} not found`,
+        );
+      }
+
+      const insufficientStockProducts: TProductForStockDetails[] = [];
+
+      for (const item of data.items) {
+        const stock = stockList.find((s) => s.product.id === item.itemId)!;
+        if (stock.quantityAvailable < item.quantity) {
+          insufficientStockProducts.push(stock.product);
+        }
+      }
+
+      if (insufficientStockProducts.length > 0) {
+        throw new NotFoundException(
+          `Insufficient stock for products ${insufficientStockProducts.map((p) => p.name).join(', ')}`,
+        );
+      }
+
+      const consumables = stockList
+        .filter((s) => s.product.isConsumable)
+        .map((s) => s.product.id);
+
+      const issueRequest = await this.circulationService.createIssueRequest(
+        data,
+        consumables,
+        user,
+        tx,
+      );
+
+      await this.stockService.createStockMovement(
+        data.items.map((item) => {
+          return {
+            productId: item.itemId,
+            quantity: -item.quantity,
+            movementType: 'issue',
+            reference: `Issue request ${issueRequest.id}`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        data.items.map((item) => {
+          const stock = stockList.find((s) => s.product.id === item.itemId)!;
+
+          return {
+            productId: item.itemId,
+            payload: {
+              quantityAvailable: stock.quantityAvailable - item.quantity,
+              quantityIssued: stock.quantityIssued + item.quantity,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'create',
+          actorType: 'user',
+          entityId: issueRequest.id,
+          entityType: 'issue_request',
+          description: `Issue request ${issueRequest.id} created`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
+  }
+
+  async getIssueRequest(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+
+    return await db.transaction(async (tx) => {
+      const issueRequest = await this.circulationService.getIssueRequest(
+        id,
+        tx,
+      );
+      if (!issueRequest) {
+        throw new NotFoundException(`Issue request with id ${id} not found`);
+      }
+
+      const [userInfo, productsInfo] = await Promise.all([
+        this.userService.getUserById(issueRequest.issuedTo.id, tx),
+        this.productService.getProductList(
+          issueRequest.items.map((i) => i.product.id),
+          tx,
+        ),
+      ]);
+
+      return {
+        request: issueRequest,
+        list: {
+          user: userInfo,
+          products: productsInfo,
+        },
+      };
+    });
+  }
+
+  async updateIssueRequest(
+    id: number,
+    data: TIssueRequestUpdateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+
+    return await db.transaction(async (tx) => {
+      const issueRequest = await this.circulationService.getIssueRequest(
+        id,
+        tx,
+      );
+      if (!issueRequest) {
+        throw new NotFoundException(`Issue request with id ${id} not found`);
+      }
+
+      const returnRequests =
+        await this.circulationService.getReturnRequestByIssueCode(
+          issueRequest.issueCode,
+          tx,
+        );
+
+      if (returnRequests.length > 0) {
+        throw new ConflictException(
+          `Issue request with id ${id} has return requests`,
+        );
+      }
+
+      const stockList = await this.stockService.getStockDetailsList(
+        issueRequest.items.map((i) => i.product.id),
+        tx,
+      );
+
+      const nonExistingProducts: TProductForStockDetails[] = [];
+
+      // check for existance of product
+      for (const item of data.items) {
+        const stock = stockList.find((s) => s.product.id === item.itemId);
+        if (!stock) {
+          nonExistingProducts.push(stock.product);
+        }
+      }
+
+      if (nonExistingProducts.length > 0) {
+        throw new NotFoundException(
+          `Product ${nonExistingProducts.map((p) => p.name).join(', ')} not found`,
+        );
+      }
+
+      const insufficientStockProducts: TProductForStockDetails[] = [];
+
+      for (const item of data.items) {
+        const stock = stockList.find((s) => s.product.id === item.itemId)!;
+        const oldIssueRequestItem = issueRequest.items.find(
+          (i) => i.product.id === item.itemId,
+        );
+
+        if (
+          stock.quantityAvailable + oldIssueRequestItem.quantity <
+          item.quantity
+        ) {
+          insufficientStockProducts.push(stock.product);
+        }
+      }
+
+      if (insufficientStockProducts.length > 0) {
+        throw new NotFoundException(
+          `Insufficient stock for products ${insufficientStockProducts.map((p) => p.name).join(', ')}`,
+        );
+      }
+
+      const consumables = stockList
+        .filter((s) => s.product.isConsumable)
+        .map((s) => s.product.id);
+
+      await this.circulationService.updateIssueRequest(
+        id,
+        data,
+        consumables,
+        user,
+        tx,
+      );
+
+      // reverse old issue stock movement
+      await this.stockService.createStockMovement(
+        issueRequest.items.map((it) => ({
+          productId: it.product.id,
+          quantity: it.quantity,
+          movementType: 'adjustment',
+          reference: `Issue request ${id}`,
+        })),
+        tx,
+      );
+
+      // revert old issue stock metadata
+      await this.stockService.updateStockMetadata(
+        issueRequest.items.map((item) => {
+          const stock = stockList.find(
+            (s) => s.product.id === item.product.id,
+          )!;
+
+          return {
+            productId: item.product.id,
+            payload: {
+              quantityAvailable: stock.quantityAvailable + item.quantity,
+              quantityIssued: stock.quantityIssued - item.quantity,
+            },
+          };
+        }),
+        tx,
+      );
+
+      // add new issue stock movement
+      await this.stockService.createStockMovement(
+        data.items.map((it) => ({
+          productId: it.itemId,
+          quantity: -it.quantity,
+          movementType: 'issue',
+          reference: `Issue request ${id}`,
+        })),
+        tx,
+      );
+
+      // add new issue stock metadata
+      await this.stockService.updateStockMetadata(
+        data.items.map((item) => {
+          const stock = stockList.find((s) => s.product.id === item.itemId)!;
+          const oldIssueRequestItem = issueRequest.items.find(
+            (i) => i.product.id === item.itemId,
+          );
+
+          return {
+            productId: item.itemId,
+            payload: {
+              quantityAvailable:
+                stock.quantityAvailable +
+                (oldIssueRequestItem?.quantity ?? 0) -
+                item.quantity,
+              quantityIssued:
+                stock.quantityIssued -
+                (oldIssueRequestItem?.quantity ?? 0) +
+                item.quantity,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'update',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'issue_request',
+          description: `Issue request ${id} updated`,
+          userId: user.id,
+        },
+        tx,
+      );
+
+      return {
+        message: `Issue request with id ${id} updated successfully`,
+      };
+    });
+  }
+
+  async deleteIssueRequest(id: number, user: TJWTPayload, trx?: Transaction) {
+    const db = trx ?? this.db;
+
+    return await db.transaction(async (tx) => {
+      const issueRequest = await this.circulationService.getIssueRequest(
+        id,
+        tx,
+      );
+      if (!issueRequest) {
+        throw new NotFoundException(`Issue request with id ${id} not found`);
+      }
+
+      const returnRequests =
+        await this.circulationService.getReturnRequestByIssueCode(
+          issueRequest.issueCode,
+          trx,
+        );
+      if (returnRequests.length > 0) {
+        throw new ConflictException(
+          `Issue request with id ${id} has return requests`,
+        );
+      }
+
+      const stockList = await this.stockService.getStockDetailsList(
+        issueRequest.items.map((i) => i.product.id),
+        tx,
+      );
+
+      await this.circulationService.deleteIssueRequest(id, tx);
+      await this.stockService.createStockMovement(
+        issueRequest.items.map((item) => {
+          return {
+            productId: item.product.id,
+            quantity: item.quantity,
+            movementType: 'adjustment',
+            reference: `Issue request ${id} deleted`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        issueRequest.items.map((item) => {
+          const stock = stockList.find(
+            (s) => s.product.id === item.product.id,
+          )!;
+
+          return {
+            productId: item.product.id,
+            payload: {
+              quantityAvailable: stock.quantityAvailable + item.quantity,
+              quantityIssued: stock.quantityIssued - item.quantity,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'delete',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'issue_request',
+          description: `Issue request ${id} deleted`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
+  }
+
+  async createReturnRequest(
+    data: TReturnRequestCreateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+
+    await db.transaction(async (tx) => {
+      const issueRequest = await this.circulationService.getIssueRequest(
+        data.issueRequestId,
+        tx,
+      );
+
+      if (!issueRequest) {
+        throw new NotFoundException(
+          `Issue request with id ${data.issueRequestId} not found`,
+        );
+      }
+
+      const nonExistingIssueRequestItems: TReturnRequestCreateSchema['items'] =
+        [];
+
+      for (const item of data.items) {
+        const existingItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+        if (!existingItem) {
+          nonExistingIssueRequestItems.push(item);
+        }
+      }
+
+      if (nonExistingIssueRequestItems.length > 0) {
+        throw new NotFoundException(
+          `Issue request items ${nonExistingIssueRequestItems.map((i) => i.issueItemId).join(', ')} not found`,
+        );
+      }
+
+      const [stockList, returnRequests] = await Promise.all([
+        this.stockService.getStockDetailsList(
+          issueRequest.items.map((i) => i.product.id),
+          tx,
+        ),
+        this.circulationService.getReturnRequestByIssueCode(
+          issueRequest.issueCode,
+          tx,
+        ),
+      ]);
+
+      const consumables = stockList
+        .filter((s) => s.product.isConsumable)
+        .map((s) => s.product.id);
+
+      // base for quantity check and update
+      const nonConsumableItems = data.items.filter((item) => {
+        const existingIssueRequestItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+        return !consumables.includes(existingIssueRequestItem.product.id);
+      });
+
+      const quantityExceededReturnRequests: TIssueRequestItem[] = [];
+
+      for (const item of nonConsumableItems) {
+        const issuedItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+
+        const totalReturns = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === item.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityReceived ?? 0);
+        }, 0);
+
+        const quantityDamaged = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === item.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityDamaged ?? 0);
+        }, 0);
+
+        if (
+          issuedItem.quantity - quantityDamaged - totalReturns <
+          item.quantityReturned + item.quantityDamaged
+        ) {
+          quantityExceededReturnRequests.push(issuedItem);
+        }
+      }
+
+      if (quantityExceededReturnRequests.length > 0) {
+        throw new BadRequestException(
+          `Return request quantity for items ${quantityExceededReturnRequests.map((i) => i.id).join(', ')} exceeds issue request quantity`,
+        );
+      }
+
+      await this.circulationService.createReturnRequest(data, user, tx);
+
+      await this.stockService.createStockMovement(
+        nonConsumableItems.map((item) => {
+          const prod = issueRequest.items.find(
+            (i) => i.id === item.issueItemId,
+          ).product;
+          return {
+            productId: prod.id,
+            quantity: item.quantityReturned,
+            movementType: 'return',
+            reference: `Return request ${data.issueRequestId}`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        nonConsumableItems.map((item) => {
+          const prod = issueRequest.items.find(
+            (i) => i.id === item.issueItemId,
+          ).product;
+          const stock = stockList.find((s) => s.product.id === prod.id)!;
+
+          return {
+            productId: prod.id,
+            payload: {
+              quantityAvailable:
+                stock.quantityAvailable + item.quantityReturned,
+              quantityIssued: stock.quantityIssued - item.quantityReturned,
+              quantityDamaged: stock.quantityDamaged + item.quantityDamaged,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'create',
+          actorType: 'user',
+          entityId: data.issueRequestId,
+          entityType: 'return_request',
+          description: `Return request ${data.issueRequestId} created`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
+  }
+
+  async updateReturnRequest(
+    id: number,
+    data: TReturnRequestUpdateSchema,
+    user: TJWTPayload,
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+
+    await db.transaction(async (tx) => {
+      const returnRequest = await this.circulationService.getReturnRequest(
+        id,
+        tx,
+      );
+      if (!returnRequest) {
+        throw new NotFoundException(`Return request with id ${id} not found`);
+      }
+
+      const issueRequest = await this.circulationService.getIssueRequest(
+        returnRequest.issueRequestId,
+        tx,
+      );
+
+      const nonExistingIssueRequestItems: TReturnRequestCreateSchema['items'] =
+        [];
+
+      for (const item of data.items) {
+        const existingItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+        if (!existingItem) {
+          nonExistingIssueRequestItems.push(item);
+        }
+      }
+
+      if (nonExistingIssueRequestItems.length > 0) {
+        throw new NotFoundException(
+          `Issue request items ${nonExistingIssueRequestItems.map((i) => i.issueItemId).join(', ')} not found`,
+        );
+      }
+
+      const [stockList, returnRequests] = await Promise.all([
+        this.stockService.getStockDetailsList(
+          issueRequest.items.map((i) => i.product.id),
+          tx,
+        ),
+        this.circulationService.getReturnRequestByIssueCode(
+          issueRequest.issueCode,
+          tx,
+        ),
+      ]);
+
+      const consumables = stockList
+        .filter((s) => s.product.isConsumable)
+        .map((s) => s.product.id);
+
+      // base for quantity check and update
+      const nonConsumableItems = data.items.filter((item) => {
+        const existingIssueRequestItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+        return !consumables.includes(existingIssueRequestItem.product.id);
+      });
+      const existingReturnRequest = returnRequests.find((rr) => rr.id === id);
+
+      const quantityExceededReturnRequests: TIssueRequestItem[] = [];
+      for (const item of nonConsumableItems) {
+        const existingReturnRequestItem = existingReturnRequest.items.find(
+          (i) => i.issueItemId === item.issueItemId,
+        );
+        const issuedItem = issueRequest.items.find(
+          (i) => i.id === item.issueItemId,
+        );
+
+        const totalReturns = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === item.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityReceived ?? 0);
+        }, 0);
+
+        const quantityDamaged = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === item.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityDamaged ?? 0);
+        }, 0);
+
+        // checking if the new return request exceeds the issue request quantity
+        if (
+          issuedItem.quantity -
+            quantityDamaged -
+            totalReturns +
+            existingReturnRequestItem.quantityReceived -
+            existingReturnRequestItem.quantityDamaged <
+          item.quantityReturned + item.quantityDamaged
+        ) {
+          quantityExceededReturnRequests.push(issuedItem);
+        }
+      }
+
+      if (quantityExceededReturnRequests.length > 0) {
+        throw new BadRequestException(
+          `Return request quantity for items ${quantityExceededReturnRequests.map((i) => i.id).join(', ')} exceeds issue request quantity`,
+        );
+      }
+
+      await this.circulationService.updateReturnRequest(id, data, tx);
+
+      // revert previous movements of this return request and create new ones
+      await this.stockService.createStockMovement(
+        existingReturnRequest.items.map((item) => {
+          return {
+            productId: item.product.id,
+            quantity: -item.quantityReceived,
+            movementType: 'return',
+            reference: `Return request ${existingReturnRequest.issueRequestId}`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        existingReturnRequest.items.map((item) => {
+          const stock = stockList.find(
+            (s) => s.product.id === item.product.id,
+          )!;
+          return {
+            productId: item.product.id,
+            payload: {
+              quantityAvailable:
+                stock.quantityAvailable - item.quantityReceived,
+              quantityIssued: stock.quantityIssued + item.quantityReceived,
+              quantityDamaged: stock.quantityDamaged - item.quantityDamaged,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.createStockMovement(
+        nonConsumableItems.map((item) => {
+          const existingIssueRequestItem = issueRequest.items.find(
+            (i) => i.id === item.issueItemId,
+          );
+          return {
+            productId: existingIssueRequestItem.product.id,
+            quantity: item.quantityReturned,
+            movementType: 'return',
+            reference: `Return request ${data.issueRequestId}`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        nonConsumableItems.map((item) => {
+          const existingReturnRequestItem = existingReturnRequest.items.find(
+            (i) => i.id === item.issueItemId,
+          );
+          const stock = stockList.find(
+            (s) => s.product.id === existingReturnRequestItem.product.id,
+          )!;
+          return {
+            productId: existingReturnRequestItem.product.id,
+            payload: {
+              quantityAvailable:
+                stock.quantityAvailable -
+                existingReturnRequestItem.quantityReceived +
+                item.quantityReturned,
+              quantityIssued:
+                stock.quantityIssued +
+                existingReturnRequestItem.quantityReceived -
+                item.quantityReturned,
+              quantityDamaged:
+                stock.quantityDamaged -
+                existingReturnRequestItem.quantityDamaged +
+                item.quantityDamaged,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'update',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'return_request',
+          description: `Return request ${id} updated`,
+          userId: user.id,
+        },
+        tx,
+      );
+    });
+  }
+
+  async deleteReturnRequest(id: number, user: TJWTPayload, trx?: Transaction) {
+    const db = trx ?? this.db;
+
+    await db.transaction(async (tx) => {
+      const returnRequest = await this.circulationService.getReturnRequest(
+        id,
+        tx,
+      );
+      if (!returnRequest) {
+        throw new NotFoundException(`Return request with id ${id} not found`);
+      }
+
+      const stockList = await this.stockService.getStockDetailsList(
+        returnRequest.items.map((i) => i.product.id),
+        tx,
+      );
+
+      await this.circulationService.deleteReturnRequest(id, tx);
+
+      await this.stockService.createStockMovement(
+        returnRequest.items.map((item) => {
+          return {
+            productId: item.product.id,
+            quantity: item.quantityReceived,
+            movementType: 'adjustment',
+            reference: `Return request ${id} deleted`,
+          };
+        }),
+        tx,
+      );
+
+      await this.stockService.updateStockMetadata(
+        returnRequest.items.map((item) => {
+          const stock = stockList.find(
+            (s) => s.product.id === item.product.id,
+          )!;
+
+          return {
+            productId: item.product.id,
+            payload: {
+              quantityAvailable:
+                stock.quantityAvailable - item.quantityReceived,
+              quantityIssued: stock.quantityIssued + item.quantityReceived,
+              quantityDamaged: stock.quantityDamaged - item.quantityDamaged,
+            },
+          };
+        }),
+        tx,
+      );
+
+      await this.auditService.logAction(
+        {
+          action: 'delete',
+          actorType: 'user',
+          entityId: id,
+          entityType: 'return_request',
+          description: `Return request ${id} deleted`,
           userId: user.id,
         },
         tx,

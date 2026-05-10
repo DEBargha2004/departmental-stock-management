@@ -12,3 +12,14 @@ export const vendorUpdateSchema = vendorCreateSchema;
 
 export type TVendorCreateSchema = z.infer<typeof vendorCreateSchema>;
 export type TVendorUpdateSchema = z.infer<typeof vendorUpdateSchema>;
+
+export type TVendor = {
+  id: number;
+  name: string;
+  contactPerson: string;
+  phone: string;
+  email?: string | null;
+  address?: string | null;
+  isActive: boolean;
+  lastOrderDate?: Date | string | null;
+};

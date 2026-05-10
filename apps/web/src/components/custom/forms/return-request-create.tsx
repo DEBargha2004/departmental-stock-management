@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { TFormProps } from "@/types/form-props";
-import type { TReturnRequestCreateSchema } from "@repo/contracts/return-request";
+import type { TReturnRequestCreateSchema } from "@repo/contracts/circulation";
 import { useGetAllItemsQuery } from "@/controllers/product/query";
 import { useState } from "react";
 
@@ -55,10 +55,6 @@ export default function CreateReturnRequestForm({
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
-  });
-
-  const [query, setQuery] = useState({
-    products: "",
   });
 
   const items = useWatch({

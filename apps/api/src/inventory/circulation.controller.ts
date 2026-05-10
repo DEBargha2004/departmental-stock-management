@@ -17,22 +17,24 @@ import { ZodValidationPipe } from 'src/global/pipes/zod-validation.pipe';
 import {
   issueRequestCreateSchema,
   issueRequestUpdateSchema,
-  type TIssueRequestCreateSchema,
-  type TIssueRequestUpdateSchema,
-} from '@repo/contracts/issue-request';
-import {
   returnRequestCreateSchema,
   returnRequestUpdateSchema,
+  type TIssueRequestCreateSchema,
+  type TIssueRequestUpdateSchema,
   type TReturnRequestCreateSchema,
   type TReturnRequestUpdateSchema,
-} from '@repo/contracts/return-request';
+} from '@repo/contracts/circulation';
+
 import { CurrentUser } from 'src/user/user.decorator';
 import type { TJWTPayload } from 'src/authentication/auth.service';
-
+import { InventoryService } from './inventory.service';
 
 @Controller('circulation')
 export class CirculationController {
-  constructor(private readonly circulationService: CirculationService) {}
+  constructor(
+    private readonly circulationService: CirculationService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   @Auth('issue-request.read')
   @Get('issue-request')
@@ -51,7 +53,7 @@ export class CirculationController {
   @Auth('issue-request.read')
   @Get('issue-request/:id')
   async getIssueRequest(@Param('id', ParseIntPipe) id: number) {
-    const res = await this.circulationService.getIssueRequest(id);
+    const res = await this.inventoryService.getIssueRequest(id);
 
     return ResponseBuilder.success(res, 'Issue request fetched successfully');
   }
@@ -85,7 +87,7 @@ export class CirculationController {
     data: TIssueRequestCreateSchema,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.createIssueRequest(data, user);
+    await this.inventoryService.createIssueRequest(data, user);
 
     return ResponseBuilder.success(null, 'Issue request created successfully');
   }
@@ -98,7 +100,7 @@ export class CirculationController {
     data: TIssueRequestUpdateSchema,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.updateIssueRequest(id, data, user);
+    await this.inventoryService.updateIssueRequest(id, data, user);
 
     return ResponseBuilder.success(null, 'Issue request updated successfully');
   }
@@ -109,7 +111,7 @@ export class CirculationController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.deleteIssueRequest(id, user);
+    await this.inventoryService.deleteIssueRequest(id, user);
 
     return ResponseBuilder.success(null, 'Issue request deleted successfully');
   }
@@ -121,7 +123,7 @@ export class CirculationController {
     data: TReturnRequestCreateSchema,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.createReturnRequest(data, user);
+    await this.inventoryService.createReturnRequest(data, user);
 
     return ResponseBuilder.success(null, 'Return request created successfully');
   }
@@ -134,7 +136,7 @@ export class CirculationController {
     data: TReturnRequestUpdateSchema,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.updateReturnRequest(id, data, user);
+    await this.inventoryService.updateReturnRequest(id, data, user);
 
     return ResponseBuilder.success(null, 'Return request updated successfully');
   }
@@ -145,7 +147,7 @@ export class CirculationController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: TJWTPayload,
   ) {
-    await this.circulationService.deleteReturnRequest(id, user);
+    await this.inventoryService.deleteReturnRequest(id, user);
 
     return ResponseBuilder.success(null, 'Return request deleted successfully');
   }

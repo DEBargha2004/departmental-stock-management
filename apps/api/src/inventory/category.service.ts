@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { TCategoryCreateSchema } from '@repo/contracts/category';
+import { TCategoryCreateSchema, type TCategory } from '@repo/contracts/category';
 import { DATABASE_MODULE, type TDB, type Transaction } from 'src/database/db.module';
 import { and, count, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { category } from './category.schema';
@@ -25,17 +25,24 @@ export class CategoryService {
     return cat;
   }
 
-  async getCategory(id: number, trx?: Transaction) {
+  async getCategory(id: number, trx?: Transaction): Promise<TCategory> {
     const db = trx ?? this.db;
     const [cat] = await db
-      .select()
+      .select({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        isActive: category.isActive,
+        createdAt: category.createdAt,
+        itemsCount: sql<number>`(SELECT COUNT(*) FROM ${product} WHERE ${product.categoryId} = ${category.id})`.mapWith(Number),
+      })
       .from(category)
       .where(and(isNull(category.deletedAt), eq(category.id, id)));
 
     return cat;
   }
 
-  async getCategories({ query, limit = 20, page = 1, status }: TCategoryQuery, trx?: Transaction) {
+  async getCategories({ query, limit = 20, page = 1, status }: TCategoryQuery, trx?: Transaction): Promise<{ list: TCategory[]; count: number }> {
     const db = trx ?? this.db;
     const baseQuery = db
       .select({

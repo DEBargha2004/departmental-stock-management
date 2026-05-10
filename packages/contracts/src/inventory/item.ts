@@ -18,3 +18,21 @@ export const productUpdateSchema = productSchema;
 
 export type TProductCreateSchema = z.infer<typeof productCreateSchema>;
 export type TProductUpdateSchema = z.infer<typeof productUpdateSchema>;
+
+export type TProduct = {
+  id: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  category: {
+    id: number;
+    name: string;
+    description: string;
+  };
+  stock: {
+    quantity: number;
+    minStockLevel: number;
+  };
+  isConsumable: boolean;
+};

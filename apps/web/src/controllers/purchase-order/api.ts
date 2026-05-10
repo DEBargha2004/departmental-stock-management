@@ -5,34 +5,15 @@ import type { AxiosResponse } from "axios";
 import type {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
+  TPurchaseOrder,
+  TPurchaseOrderItem,
 } from "@repo/contracts/purchase-order";
 import { api } from "@/lib/axios";
 import { PURCHASE_ORDER_STATUS } from "@repo/contracts/status";
-import type { TProduct } from "../product/api";
-import type { TVendor } from "../vendor/api";
+import type { TProduct } from "@repo/contracts/item";
+import type { TVendor } from "@repo/contracts/vendor";
 
-export type TPurchaseOrder = {
-  id: number;
-  invoiceId: string;
-  orderDate: Date;
-  status: PURCHASE_ORDER_STATUS;
-  totalAmount: number;
-  vendor: {
-    id: number;
-    name: string;
-  };
-  items: TPurchaseOrderItem[];
-};
 
-export type TPurchaseOrderItem = {
-  id: number;
-  quantity: number;
-  unitPrice: number;
-  product: {
-    id: number;
-    name: string;
-  };
-};
 
 export async function createPurchaseOrderRequest(
   data: TPurchaseOrderCreateSchema,

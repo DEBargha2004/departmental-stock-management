@@ -43,7 +43,7 @@ export class UserController {
     });
 
     return ResponseBuilder.success({
-      list: res.users.map(buildUserObject),
+      list: res.list,
       count: res.count,
     });
   }
@@ -53,6 +53,6 @@ export class UserController {
   async getUser(@Param('id', ParseIntPipe) id: number) {
     const user = await this.userService.getUserById(id);
 
-    return ResponseBuilder.success(buildUserObject(user));
+    return ResponseBuilder.success(user);
   }
 }

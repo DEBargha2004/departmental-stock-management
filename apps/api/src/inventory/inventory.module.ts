@@ -13,6 +13,7 @@ import { StockBatchService } from './stock-batch.service';
 import { AuditModule } from 'src/audit/audit.module';
 import { CirculationController } from './circulation.controller';
 import { CirculationService } from './circulation.service';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   controllers: [
@@ -22,7 +23,7 @@ import { CirculationService } from './circulation.service';
     StockBatchController,
     CirculationController,
   ],
-  imports: [VendorModule, AuditModule],
+  imports: [VendorModule, AuditModule, UserModule],
   providers: [
     ProductService,
     CategoryService,

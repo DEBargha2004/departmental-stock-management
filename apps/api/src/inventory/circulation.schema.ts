@@ -47,7 +47,9 @@ export const returnRequest = pgTable('return_request', {
   issueRequestId: integer('issue_request_id')
     .notNull()
     .references(() => issueRequest.id),
-
+  issuerId: integer('issuer_id')
+    .notNull()
+    .references(() => user.id),
   returnDate: timestamp('return_date').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),

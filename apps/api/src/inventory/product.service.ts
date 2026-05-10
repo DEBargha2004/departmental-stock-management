@@ -7,6 +7,7 @@ import {
 import {
   TProductUpdateSchema,
   type TProductCreateSchema,
+  type TProduct,
 } from '@repo/contracts/item';
 import { TProductQuery } from '@repo/contracts/query';
 import { product } from './product.schema';
@@ -80,7 +81,7 @@ export class ProductService {
     return pr;
   }
 
-  async getProduct(id: number, trx?: Transaction) {
+  async getProduct(id: number, trx?: Transaction): Promise<TProduct> {
     const db = trx ?? this.db;
     const [pr] = await db
       .select({
@@ -114,7 +115,7 @@ export class ProductService {
     return pr;
   }
 
-  async getProductList(ids: number[], trx?: Transaction) {
+  async getProductList(ids: number[], trx?: Transaction): Promise<TProduct[]> {
     const db = trx ?? this.db;
     const list = await db
       .select({
@@ -151,7 +152,7 @@ export class ProductService {
   async getProducts(
     { query = '', limit = 20, page = 1, category: cat, status }: TProductQuery,
     trx?: Transaction,
-  ) {
+  ): Promise<{ list: TProduct[]; count: number }> {
     const db = trx ?? this.db;
     const baseQuery = db
       .select({

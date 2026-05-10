@@ -1,5 +1,6 @@
-import type { TIssueRequest } from "@/controllers/issue-request/api";
-import { Package2, Hash } from "lucide-react";
+import type { TIssueRequest } from "@repo/contracts/circulation";
+import { Package2, Hash, Calendar, User, CheckCircle2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -9,7 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function IssueRequestItemList({ request }: { request: TIssueRequest }) {
+export default function IssueRequestItemList({
+  request,
+}: {
+  request: TIssueRequest;
+}) {
   const items = request.items;
   if (!items || items.length === 0) {
     return (
@@ -23,49 +28,103 @@ export default function IssueRequestItemList({ request }: { request: TIssueReque
   }
 
   return (
-    <div className="rounded-xl border border-input/40 bg-background shadow-lg shadow-black/5 ring-1 ring-black/5 max-h-[calc(100vh-20rem)] overflow-y-auto">
-      <Table>
-        <TableHeader className="uppercase tracking-wider sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
-          <TableRow className="hover:bg-transparent border-b border-input/40">
-            <TableHead className="px-4 py-3 h-12 text-xs font-semibold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Package2 className="h-3.5 w-3.5" />
-                Product
-              </div>
-            </TableHead>
-            <TableHead className="px-4 py-3 h-12 text-xs font-semibold text-muted-foreground text-center">
-              <div className="flex items-center gap-2 justify-center">
-                <Hash className="h-3.5 w-3.5" />
-                Qty
-              </div>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow
-              key={item.id}
-              className="group border-input/20 hover:bg-muted/30 transition-all duration-200"
-            >
-              <TableCell className="px-4 py-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                    {item.product.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono opacity-60">
-                    ID: {item.product.id}
-                  </span>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-y-6 gap-x-8 p-6 rounded-2xl border border-input/40 bg-muted/10 relative overflow-hidden">
+        <div className="flex flex-col gap-1.5 relative z-10">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+            <Calendar className="h-3.5 w-3.5 text-primary/60" />
+            Issue Date
+          </div>
+          <span className="text-sm font-semibold text-foreground tracking-tight">
+            {formatDate(request.issueDate)}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1.5 relative z-10">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+            <Package2 className="h-3.5 w-3.5 text-primary/60" />
+            Items Count
+          </div>
+          <span className="text-sm font-semibold text-foreground tracking-tight">
+            {items.length} {items.length === 1 ? "Product" : "Products"}
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1.5 relative z-10 col-span-1">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+            <User className="h-3.5 w-3.5 text-primary/60" />
+            Issued To
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-foreground tracking-tight">
+              {request.issuedTo.name}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium">
+              {request.issuedTo.email}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 relative z-10 col-span-1">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary/60" />
+            Issued By
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-foreground tracking-tight">
+              {request.issuedBy.name}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium text-primary/70 uppercase tracking-wider">
+              {request.issuedBy.role}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-input/40 bg-background shadow-lg shadow-black/5 ring-1 ring-black/5 max-h-[calc(100vh-20rem)] overflow-y-auto">
+        <Table>
+          <TableHeader className="uppercase tracking-wider sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+            <TableRow className="hover:bg-transparent border-b border-input/40">
+              <TableHead className="px-4 py-3 h-12 text-xs font-semibold text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Package2 className="h-3.5 w-3.5" />
+                  Product
                 </div>
-              </TableCell>
-              <TableCell className="px-4 py-4 text-center">
-                <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-muted/60 text-xs font-bold font-mono ring-1 ring-inset ring-input/20">
-                  {item.quantity}
-                </span>
-              </TableCell>
+              </TableHead>
+              <TableHead className="px-4 py-3 h-12 text-xs font-semibold text-muted-foreground text-center">
+                <div className="flex items-center gap-2 justify-center">
+                  <Hash className="h-3.5 w-3.5" />
+                  Qty
+                </div>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow
+                key={item.id}
+                className="group border-input/20 hover:bg-muted/30 transition-all duration-200"
+              >
+                <TableCell className="px-4 py-4">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                      {item.product.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono opacity-60">
+                      ID: {item.product.id}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="px-4 py-4 text-center">
+                  <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-muted/60 text-xs font-bold font-mono ring-1 ring-inset ring-input/20">
+                    {item.quantity}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { DATABASE_MODULE, Transaction, type TDB } from 'src/database/db.module';
 import {
   TPurchaseOrderCreateSchema,
   TPurchaseOrderUpdateSchema,
+  type TPurchaseOrder,
+  type TPurchaseOrderItem,
 } from '@repo/contracts/purchase-order';
 import { purchaseOrder, purchaseOrderItems } from './purchase-order.schema';
 import { ProductService } from './product.service';
@@ -18,28 +20,7 @@ import { TPurchaseOrderQuery } from '@repo/contracts/query';
 import { PURCHASE_ORDER_STATUS } from '@repo/contracts/status';
 import { VendorService } from 'src/vendor/vendor.service';
 
-export type PurchaseOrder = {
-  id: number;
-  invoiceId: string;
-  orderDate: Date;
-  status: PURCHASE_ORDER_STATUS;
-  totalAmount: number;
-  vendor: {
-    id: number;
-    name: string;
-  };
-  items: PurchaseOrderItem[];
-};
 
-export type PurchaseOrderItem = {
-  id: number;
-  quantity: number;
-  unitPrice: number;
-  product: {
-    id: number;
-    name: string;
-  };
-};
 
 @Injectable()
 export class PurchaseOrderService {
@@ -84,7 +65,7 @@ export class PurchaseOrderService {
     return po;
   }
 
-  async getPurchaseOrder(id: number, trx?: Transaction) {
+  async getPurchaseOrder(id: number, trx?: Transaction): Promise<{ order: TPurchaseOrder; list: any }> {
     const db = trx ?? this.db;
     const [po] = await db
       .select({
@@ -100,7 +81,7 @@ export class PurchaseOrderService {
             'id', ${vendor.id}, 
             'name', ${vendor.name}
           )`.as('vendor'),
-        items: sql<PurchaseOrderItem[]>`COALESCE(JSON_AGG(
+        items: sql<TPurchaseOrderItem[]>`COALESCE(JSON_AGG(
           JSON_BUILD_OBJECT(
             'id', ${purchaseOrderItems.id},
             'quantity', ${purchaseOrderItems.quantity},
@@ -147,7 +128,7 @@ export class PurchaseOrderService {
   async getPurchaseOrders(
     { query = '', limit = 20, page = 1, status, vendorId }: TPurchaseOrderQuery,
     trx?: Transaction,
-  ) {
+  ): Promise<{ list: TPurchaseOrder[]; count: number }> {
     const db = trx ?? this.db;
     const baseQuery = db
       .select({
@@ -163,7 +144,7 @@ export class PurchaseOrderService {
           'id', ${vendor.id}, 
           'name', ${vendor.name}
         )`.as('vendor'),
-        items: sql<PurchaseOrderItem[]>`COALESCE(JSON_AGG(
+        items: sql<TPurchaseOrderItem[]>`COALESCE(JSON_AGG(
         JSON_BUILD_OBJECT(
           'id', ${purchaseOrderItems.id},
           'quantity', ${purchaseOrderItems.quantity},
@@ -237,7 +218,7 @@ export class PurchaseOrderService {
     ]);
 
     return {
-      list: result as PurchaseOrder[],
+      list: result as TPurchaseOrder[],
       count: totalCount,
     };
   }

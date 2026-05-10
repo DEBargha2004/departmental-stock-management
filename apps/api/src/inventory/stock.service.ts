@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  product,
   stock,
   stockMovement,
   TDBStock,
@@ -11,33 +12,77 @@ import {
   type Transaction,
 } from 'src/database/db.module';
 import { eq, inArray, max, sql } from 'drizzle-orm';
-import { TPurchaseOrderCreateSchema } from '@repo/contracts/purchase-order';
 
 type TStockUpdate = {
   productId: number;
   payload: Partial<Omit<TDBStock, 'productId'>>;
 };
 
+export type TProductForStockDetails = {
+  id: number;
+  name: string;
+  isConsumable: boolean;
+};
+
+type TFullStockDetails = {
+  id: number;
+  minStockLevel: number;
+  quantityAvailable: number;
+  quantityDamaged: number;
+  quantityIssued: number;
+  product: TProductForStockDetails;
+};
+
 @Injectable()
 export class StockService {
   constructor(@Inject(DATABASE_MODULE) private db: TDB) {}
 
-  async getStockDetails(productId: number, trx?: Transaction) {
+  async getStockDetails(
+    productId: number,
+    trx?: Transaction,
+  ): Promise<TFullStockDetails | null> {
     const db = trx ?? this.db;
     const [stockDetails] = await db
-      .select()
+      .select({
+        id: stock.id,
+        minStockLevel: stock.minStockLevel,
+        quantityAvailable: stock.quantityAvailable,
+        quantityDamaged: stock.quantityDamaged,
+        quantityIssued: stock.quantityIssued,
+        product: sql<TProductForStockDetails>`JSON_BUILD_OBJECT(
+          'name',${product.name},
+          'id',${product.id},
+          'isConsumable',${product.isConsumable}
+        )`,
+      })
       .from(stock)
+      .leftJoin(product, eq(stock.productId, product.id))
       .where(eq(stock.productId, productId));
 
     return stockDetails;
   }
 
-  async getStockDetailsList(productIds: number[], trx?: Transaction) {
+  async getStockDetailsList(
+    productIds: number[],
+    trx?: Transaction,
+  ): Promise<TFullStockDetails[]> {
     const db = trx ?? this.db;
 
     const list = await db
-      .select()
+      .select({
+        id: stock.id,
+        minStockLevel: stock.minStockLevel,
+        quantityAvailable: stock.quantityAvailable,
+        quantityDamaged: stock.quantityDamaged,
+        quantityIssued: stock.quantityIssued,
+        product: sql<TProductForStockDetails>`JSON_BUILD_OBJECT(
+          'name',${product.name},
+          'id',${product.id},
+          'isConsumable',${product.isConsumable}
+        )`,
+      })
       .from(stock)
+      .leftJoin(product, eq(stock.productId, product.id))
       .where(inArray(stock.productId, productIds));
 
     return list;

@@ -13,3 +13,12 @@ export const categoryUpdateSchema = z.object({
 });
 
 export type TCategoryUpdateSchema = z.infer<typeof categoryUpdateSchema>;
+
+export type TCategory = {
+  id: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: Date;
+  itemsCount: number;
+};

@@ -6,18 +6,14 @@ export function useGetAllIssueRequestsQuery({
   query,
   limit,
   page,
-  status,
-  requesterId,
 }: TIssueRequestQuery) {
   return useQuery({
-    queryKey: ["issue-requests", query, limit, page, status, requesterId],
+    queryKey: ["issue-requests", query, limit, page],
     queryFn: () =>
       getAllIssueRequestsRequest({
         query,
         limit,
         page,
-        status,
-        requesterId,
       }),
   });
 }
