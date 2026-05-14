@@ -1,6 +1,14 @@
 import type { TIssueRequest } from "@repo/contracts/circulation";
-import { Package2, Hash, Calendar, User, CheckCircle2 } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import {
+  Package2,
+  Hash,
+  Calendar,
+  User,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { cn, formatDate } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -9,6 +17,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  getIssueRequestReturnStatusObject,
+  ISSUE_REQUEST_RETURN_STATUS,
+} from "@repo/contracts/status";
+
+function IssueItemStatusIndicator({
+  status,
+}: {
+  status: ISSUE_REQUEST_RETURN_STATUS;
+}) {
+  const config = {
+    [ISSUE_REQUEST_RETURN_STATUS.PENDING]: {
+      label: getIssueRequestReturnStatusObject("pending").label,
+      icon: Clock,
+      className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      iconClassName: "text-amber-500",
+    },
+    [ISSUE_REQUEST_RETURN_STATUS.RETURNED]: {
+      label: getIssueRequestReturnStatusObject("returned").label,
+      icon: CheckCircle2,
+      className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      iconClassName: "text-emerald-500",
+    },
+    [ISSUE_REQUEST_RETURN_STATUS.PARTIALLY_RETURNED]: {
+      label: getIssueRequestReturnStatusObject("partially_returned").label,
+      icon: AlertCircle,
+      className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      iconClassName: "text-blue-500",
+    },
+  };
+
+  const {
+    label,
+    icon: Icon,
+    className,
+    iconClassName,
+  } = config[status] || config[ISSUE_REQUEST_RETURN_STATUS.PENDING];
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border transition-all duration-300",
+        className,
+      )}
+    >
+      <Icon className={cn("h-3 w-3", iconClassName)} />
+      {label}
+    </div>
+  );
+}
 
 export default function IssueRequestItemList({
   request,
@@ -97,6 +155,12 @@ export default function IssueRequestItemList({
                   Qty
                 </div>
               </TableHead>
+              <TableHead className="px-4 py-3 h-12 text-xs font-semibold text-muted-foreground text-center">
+                <div className="flex items-center gap-2 justify-center">
+                  <Hash className="h-3.5 w-3.5" />
+                  Status
+                </div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -119,6 +183,9 @@ export default function IssueRequestItemList({
                   <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-muted/60 text-xs font-bold font-mono ring-1 ring-inset ring-input/20">
                     {item.quantity}
                   </span>
+                </TableCell>
+                <TableCell className="px-4 py-4 text-center">
+                  <IssueItemStatusIndicator status={item.returnStatus} />
                 </TableCell>
               </TableRow>
             ))}

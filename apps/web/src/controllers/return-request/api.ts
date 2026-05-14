@@ -12,7 +12,7 @@ import { api } from "@/lib/axios";
 export async function createReturnRequestRequest(
   data: TReturnRequestCreateSchema,
 ): Promise<AxiosResponse<TSuccess<null>>> {
-  return api.post("/inventory/circulation/return-request/create", data);
+  return api.post("/inventory/circulation/return-request", data);
 }
 
 export async function updateReturnRequestRequest({
@@ -37,6 +37,9 @@ export async function getReturnRequestRequest({ id }: { id: number }): Promise<
   AxiosResponse<
     TSuccess<{
       request: TReturnRequest;
+      list: {
+        issueRequest: import("@repo/contracts/circulation").TIssueRequest[];
+      };
     }>
   >
 > {

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "user_email_unique_active_idx" ON "user" USING btree ("email") WHERE "user"."is_active" = TRUE OR "user"."deleted_at" IS NULL;

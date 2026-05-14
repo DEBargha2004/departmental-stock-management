@@ -1,4 +1,4 @@
-import type { TReturnRequest } from "@/controllers/return-request/api";
+import type { TReturnRequest } from "@repo/contracts/circulation";
 import { Package2, RotateCcw, Trash2, MessageSquare } from "lucide-react";
 
 import {
@@ -10,7 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function ReturnRequestItemList({ request }: { request: TReturnRequest }) {
+export default function ReturnRequestItemList({
+  request,
+}: {
+  request: TReturnRequest;
+}) {
   const items = request.items;
   if (!items || items.length === 0) {
     return (
@@ -52,7 +56,6 @@ export default function ReturnRequestItemList({ request }: { request: TReturnReq
                 Reason
               </div>
             </TableHead>
-
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -73,7 +76,7 @@ export default function ReturnRequestItemList({ request }: { request: TReturnReq
               </TableCell>
               <TableCell className="px-4 py-4 text-center">
                 <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold font-mono ring-1 ring-inset ring-primary/20">
-                  {item.quantityReturned}
+                  {item.quantityReceived}
                 </span>
               </TableCell>
               <TableCell className="px-4 py-4 text-center">
@@ -82,7 +85,9 @@ export default function ReturnRequestItemList({ request }: { request: TReturnReq
                     {item.quantityDamaged}
                   </span>
                 ) : (
-                  <span className="text-muted-foreground/30 font-mono text-xs">-</span>
+                  <span className="text-muted-foreground/30 font-mono text-xs">
+                    -
+                  </span>
                 )}
               </TableCell>
               <TableCell className="px-4 py-4">
@@ -90,7 +95,6 @@ export default function ReturnRequestItemList({ request }: { request: TReturnReq
                   {item.reason || "N/A"}
                 </span>
               </TableCell>
-
             </TableRow>
           ))}
         </TableBody>

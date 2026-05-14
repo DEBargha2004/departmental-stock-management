@@ -8,3 +8,9 @@ export async function getAccessListRequest(): Promise<
 > {
   return api.get("/authorization/access-list");
 }
+
+export async function getPermissionsRequest(): Promise<
+  AxiosResponse<TSuccess<string[]>>
+> {
+  return api.get("/authorization/permissions");
+}

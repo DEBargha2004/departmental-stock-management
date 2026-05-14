@@ -26,6 +26,7 @@ import {
   TUserForCirculation,
 } from '@repo/contracts/circulation';
 import crypto from 'crypto';
+import { ISSUE_REQUEST_RETURN_STATUS } from '@repo/contracts/status';
 
 @Injectable()
 export class CirculationService {
@@ -34,6 +35,23 @@ export class CirculationService {
   generateCode() {
     const code = crypto.randomBytes(6).toString('hex').toUpperCase();
     return `ISU-${code}`;
+  }
+
+  generateIssueReturnStatus(
+    totalReturns: number,
+    totalDamaged: number,
+    issuedQty: number,
+  ) {
+    if (!totalDamaged) {
+      if (totalReturns < issuedQty) {
+        if (totalReturns === 0) {
+          return ISSUE_REQUEST_RETURN_STATUS.PENDING;
+        }
+        return ISSUE_REQUEST_RETURN_STATUS.PARTIALLY_RETURNED;
+      }
+      return ISSUE_REQUEST_RETURN_STATUS.RETURNED;
+    }
+    return ISSUE_REQUEST_RETURN_STATUS.PARTIALLY_RETURNED;
   }
 
   async getIssueRequests(
@@ -69,6 +87,7 @@ export class CirculationService {
                     'id', ${issueRequestItem.id},
                     'quantity', ${issueRequestItem.quantity},
                     'isConsumable', ${issueRequestItem.isConsumable},
+                    'returnStatus', ${issueRequestItem.returnStatus},
                     'product', JSON_BUILD_OBJECT(
                         'id', ${product.id},
                         'name', ${product.name}
@@ -165,6 +184,7 @@ export class CirculationService {
                     'id', ${issueRequestItem.id},
                     'quantity', ${issueRequestItem.quantity},
                     'isConsumable', ${issueRequestItem.isConsumable},
+                    'returnStatus', ${issueRequestItem.returnStatus},
                     'product', JSON_BUILD_OBJECT(
                         'id', ${product.id},
                         'name', ${product.name}
@@ -206,6 +226,7 @@ export class CirculationService {
       .select({
         id: returnRequest.id,
         issueRequestId: returnRequest.issueRequestId,
+        issueCode: issueRequest.issueCode,
         returnDate: returnRequest.returnDate,
         createdAt: returnRequest.createdAt,
         issuedTo: sql<TUserForCirculation>`JSON_BUILD_OBJECT(
@@ -252,6 +273,7 @@ export class CirculationService {
       .where(
         and(
           isNull(returnRequest.deletedAt),
+          isNull(returnRequestItem.deletedAt),
           ...(query
             ? [
                 or(
@@ -277,7 +299,7 @@ export class CirculationService {
             `)
           : desc(returnRequest.createdAt),
       )
-      .groupBy(returnRequest.id, receiver.id, issuer.id)
+      .groupBy(returnRequest.id, receiver.id, issuer.id, issueRequest.issueCode)
       .as('base_query');
 
     const selectQuery = db
@@ -298,7 +320,10 @@ export class CirculationService {
     };
   }
 
-  async getReturnRequest(id: number, trx?: Transaction) {
+  async getReturnRequest(
+    id: number,
+    trx?: Transaction,
+  ): Promise<TReturnRequest | undefined> {
     const db = trx ?? this.db;
 
     const issuer = alias(user, 'issuer');
@@ -308,6 +333,7 @@ export class CirculationService {
       .select({
         id: returnRequest.id,
         issueRequestId: returnRequest.issueRequestId,
+        issueCode: issueRequest.issueCode,
         returnDate: returnRequest.returnDate,
         createdAt: returnRequest.createdAt,
         issuedTo: sql<TUserForCirculation>`JSON_BUILD_OBJECT(
@@ -354,12 +380,16 @@ export class CirculationService {
       .where(
         and(
           isNull(returnRequest.deletedAt),
-          isNull(issueRequestItem.deletedAt),
-          isNull(returnRequestItem.reason),
+          isNull(returnRequestItem.deletedAt),
           eq(returnRequest.id, id),
         ),
       )
-      .groupBy(returnRequest.id, receiver.id, issuer.id);
+      .groupBy(
+        returnRequest.id,
+        receiver.id,
+        issuer.id,
+        issueRequest.issueCode,
+      );
 
     return request;
   }
@@ -418,7 +448,11 @@ export class CirculationService {
       .leftJoin(receiver, eq(issueRequest.issuedTo, receiver.id))
       .leftJoin(issuer, eq(issueRequest.issuedBy, issuer.id))
       .where(
-        and(isNull(returnRequest.deletedAt), eq(issueRequest.issueCode, code)),
+        and(
+          isNull(returnRequest.deletedAt),
+          isNull(returnRequestItem.deletedAt),
+          eq(issueRequest.issueCode, code),
+        ),
       )
       .groupBy(returnRequest.id, receiver.id, issuer.id);
 
@@ -452,6 +486,9 @@ export class CirculationService {
             productId: item.itemId,
             quantity: item.quantity,
             isConsumable: consumables.includes(item.itemId),
+            returnStatus: consumables.includes(item.itemId)
+              ? ISSUE_REQUEST_RETURN_STATUS.NON_RETURNABLE
+              : ISSUE_REQUEST_RETURN_STATUS.PENDING,
           }),
         ),
       );
@@ -494,6 +531,9 @@ export class CirculationService {
           productId: it.itemId,
           quantity: it.quantity,
           isConsumable: consumables.includes(it.itemId),
+          returnStatus: consumables.includes(it.itemId)
+            ? ISSUE_REQUEST_RETURN_STATUS.NON_RETURNABLE
+            : ISSUE_REQUEST_RETURN_STATUS.PENDING,
         })),
       );
 
@@ -505,6 +545,32 @@ export class CirculationService {
           issuedBy: user.id,
         })
         .where(eq(issueRequest.id, id));
+    });
+  }
+
+  async updateIssueRequestItemStatus(
+    list: { id: number; status: ISSUE_REQUEST_RETURN_STATUS }[],
+    trx?: Transaction,
+  ) {
+    const db = trx ?? this.db;
+
+    await db.transaction(async (tx) => {
+      const values = list.map(
+        (it) => sql`(
+          ${it.id}::integer,
+          ${it.status}
+        )`,
+      );
+
+      await tx.execute(sql`
+        UPDATE ${issueRequestItem}
+        SET
+          ${sql.raw(issueRequestItem.returnStatus.name)} = v.return_status
+        FROM (
+          VALUES ${sql.join(values, sql`, `)} 
+        ) AS v(id, return_status)
+        WHERE ${issueRequestItem.id} = v.id
+        `);
     });
   }
 
@@ -555,7 +621,7 @@ export class CirculationService {
         data.items.map((item) => ({
           returnRequestId: ret.id,
           issueItemId: item.issueItemId,
-          quantityReceived: item.quantityReturned,
+          quantityReceived: item.quantityReceived,
           quantityDamaged: item.quantityDamaged,
           reason: item.reason,
         })),
@@ -595,7 +661,7 @@ export class CirculationService {
         data.items.map((item) => ({
           returnRequestId: ret.id,
           issueItemId: item.issueItemId,
-          quantityReceived: item.quantityReturned,
+          quantityReceived: item.quantityReceived,
           quantityDamaged: item.quantityDamaged,
           reason: item.reason,
         })),

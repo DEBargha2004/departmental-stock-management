@@ -2,7 +2,7 @@ import {
   Permission,
   PERMISSION_LIST,
   PERMISSIONS,
-} from './permissions.constants';
+} from '@repo/contracts/permission';
 import { type Role, ROLES } from '@repo/contracts/roles';
 
 type RolePermission = {
@@ -21,6 +21,16 @@ export const ROLE_PERMISSION_LIST = [
       PERMISSIONS.PRODUCT_READ,
       PERMISSIONS.STOCK_READ,
       PERMISSIONS.USER_READ,
+
+      PERMISSIONS.ISSUE_REQUEST_CREATE,
+      PERMISSIONS.ISSUE_REQUEST_READ,
+      PERMISSIONS.ISSUE_REQUEST_UPDATE,
+      PERMISSIONS.ISSUE_REQUEST_DELETE,
+
+      PERMISSIONS.RETURN_REQUEST_CREATE,
+      PERMISSIONS.RETURN_REQUEST_READ,
+      PERMISSIONS.RETURN_REQUEST_UPDATE,
+      PERMISSIONS.RETURN_REQUEST_DELETE,
     ],
   },
   {

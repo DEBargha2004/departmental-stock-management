@@ -7,6 +7,7 @@ import { product } from './product.schema';
 import { boolean } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { ISSUE_REQUEST_RETURN_STATUS } from '@repo/contracts/status';
 
 export const issueRequest = pgTable('issue_request', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -33,7 +34,9 @@ export const issueRequestItem = pgTable(
     productId: integer('product_id')
       .notNull()
       .references(() => product.id),
-
+    returnStatus: text('return_status')
+      .$type<ISSUE_REQUEST_RETURN_STATUS>()
+      .default(ISSUE_REQUEST_RETURN_STATUS.PENDING),
     isConsumable: boolean('is_consumable').default(false),
     quantity: integer('quantity').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),

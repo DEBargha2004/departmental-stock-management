@@ -15,6 +15,34 @@
       "when": 1778414461834,
       "tag": "0001_worthless_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778691906314,
+      "tag": "0002_medical_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778692557167,
+      "tag": "0003_confused_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778692593520,
+      "tag": "0004_quick_phalanx",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778692641792,
+      "tag": "0005_charming_victor_mancha",
+      "breakpoints": true
     }
   ]
 }

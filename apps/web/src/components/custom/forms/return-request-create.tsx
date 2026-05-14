@@ -13,19 +13,24 @@ import {
   Trash2,
   CalendarIcon,
   Loader2,
-  Package,
   ShoppingCart,
   ChevronRight,
   Hash,
   Box,
-  User,
   MessageSquare,
   RotateCcw,
+  Package,
+  CheckCircle2,
+  Info,
+  AlertCircle,
 } from "lucide-react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import type { TFormProps } from "@/types/form-props";
-import type { TReturnRequestCreateSchema } from "@repo/contracts/circulation";
-import { useGetAllItemsQuery } from "@/controllers/product/query";
+import type {
+  TReturnRequestCreateSchema,
+  TIssueRequestItem,
+  TIssueRequest,
+} from "@repo/contracts/circulation";
 import { useState } from "react";
 
 import SearchableSelect, {
@@ -36,21 +41,24 @@ import SearchableSelect, {
   SearchableSelectTrigger,
   SearchableSelectVacuum,
 } from "../searchable-select";
-import type { TProduct } from "@/controllers/product/api";
 import { getDefaultReturnRequestItemValues } from "@/constants/form-defaults/return-request";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { formatDateForInput } from "@/lib/utils";
+import { useGetAllIssueRequestsQuery } from "@/controllers/issue-request/query";
+import { ISSUE_REQUEST_RETURN_STATUS } from "@repo/contracts/status";
 
 export default function CreateReturnRequestForm({
   form,
   onSubmit,
   defaultList,
+  label = "Create Return Request",
 }: TFormProps<TReturnRequestCreateSchema> & {
   defaultList?: {
-    products?: TProduct[];
+    issueRequests?: TIssueRequest[];
   };
+  label?: string;
 }) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -69,10 +77,107 @@ export default function CreateReturnRequestForm({
     }
   };
 
+  const [issueQuery, setIssueQuery] = useState("");
+  const { data: issueRequestsData, isLoading: isLoadingIssues } =
+    useGetAllIssueRequestsQuery({
+      limit: 500,
+      page: 1,
+      query: issueQuery,
+    });
+
+  const issueRequestsList =
+    (issueQuery
+      ? issueRequestsData?.data.data?.list
+      : defaultList?.issueRequests?.length
+        ? defaultList.issueRequests
+        : issueRequestsData?.data.data?.list) ?? [];
+
+  const selectedIssueRequestId = useWatch({
+    control: form.control,
+    name: "issueRequestId",
+  });
+
+  const selectedIssueRequest = issueRequestsList.find(
+    (ir) => ir.id === selectedIssueRequestId,
+  );
+  const availableItems = selectedIssueRequest?.items ?? [];
+
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="bg-muted/10 p-5 rounded-2xl border border-border/50">
+        <div className="bg-muted/10 p-5 rounded-2xl border border-border/50 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FormField
+            control={form.control}
+            name="issueRequestId"
+            render={({ field }) => (
+              <FormItem className="flex-1 min-w-0">
+                <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/70 tracking-widest mb-2 flex items-center gap-2">
+                  <Hash className="h-3 w-3" />
+                  Issue Order
+                </FormLabel>
+                <FormControl>
+                  <SearchableSelect
+                    query={issueQuery}
+                    onQueryChange={setIssueQuery}
+                    onValueChange={(val) => {
+                      field.onChange(Number(val));
+                      form.setValue("items", [
+                        getDefaultReturnRequestItemValues(),
+                      ]);
+                    }}
+                    isLoading={isLoadingIssues}
+                  >
+                    <SearchableSelectTrigger asChild>
+                      <Button
+                        type="button"
+                        className="w-full justify-between h-11 px-3 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm"
+                        variant={"outline"}
+                      >
+                        {field.value && field.value !== -1 ? (
+                          <div className="flex items-center gap-2.5 text-left min-w-0">
+                            <span className="text-sm font-bold truncate">
+                              #{field.value}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-xs">
+                            Select Issue Order...
+                          </span>
+                        )}
+                        <ChevronRight className="h-4 w-4 opacity-20 shrink-0" />
+                      </Button>
+                    </SearchableSelectTrigger>
+                    <SearchableSelectContent className="w-[350px]">
+                      <SearchableSelectInput placeholder="Search issue orders..." />
+                      <SearchableSelectList className="max-h-[280px] custom-scrollbar">
+                        <SearchableSelectVacuum
+                          listLength={issueRequestsList.length}
+                        />
+                        {issueRequestsList.map((ir) => (
+                          <SearchableSelectItem
+                            key={ir.id}
+                            value={ir.id.toString()}
+                            className="py-2.5"
+                          >
+                            <div className="flex items-center justify-between w-full gap-3">
+                              <span className="font-bold text-sm">
+                                #{ir.id}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground uppercase font-bold">
+                                {formatDateForInput(ir.issueDate.toString())}
+                              </span>
+                            </div>
+                          </SearchableSelectItem>
+                        ))}
+                      </SearchableSelectList>
+                    </SearchableSelectContent>
+                  </SearchableSelect>
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="returnDate"
@@ -87,7 +192,7 @@ export default function CreateReturnRequestForm({
                     type="date"
                     className="h-11 bg-background border-border/60 focus:bg-background transition-all font-bold text-sm cursor-pointer"
                     {...field}
-                    value={formatDateForInput(field.value)}
+                    value={formatDateForInput(field.value.toString())}
                   />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
@@ -113,6 +218,10 @@ export default function CreateReturnRequestForm({
               type="button"
               variant="outline"
               size="sm"
+              disabled={
+                selectedIssueRequestId === -1 ||
+                selectedIssueRequestId === undefined
+              }
               onClick={() => append(getDefaultReturnRequestItemValues())}
               className="h-8 px-3 gap-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary font-bold transition-all"
             >
@@ -121,13 +230,13 @@ export default function CreateReturnRequestForm({
             </Button>
           </div>
 
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar -mr-3">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar -mr-3 pt-2">
             {fields.map((field, index) => (
-              <ProductSelect
+              <IssueItemSelect
                 key={field.id}
                 index={index}
                 handleDeleteItem={handleDeleteItem}
-                defaultList={defaultList?.products ?? []}
+                availableItems={availableItems}
               />
             ))}
           </div>
@@ -142,7 +251,7 @@ export default function CreateReturnRequestForm({
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
             <div className="flex items-center gap-3">
-              <span>Create Return Request</span>
+              <span>{label}</span>
               <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </div>
           )}
@@ -152,104 +261,132 @@ export default function CreateReturnRequestForm({
   );
 }
 
-function ProductSelect({
+function IssueItemSelect({
   index,
-  defaultList,
+  availableItems,
   handleDeleteItem,
 }: {
   index: number;
-  defaultList?: TProduct[];
+  availableItems: TIssueRequestItem[];
   handleDeleteItem: (index: number) => void;
 }) {
   const { control } = useFormContext<TReturnRequestCreateSchema>();
   const [query, setQuery] = useState("");
-  const { data: products, isLoading: isLoadingProducts } = useGetAllItemsQuery({
-    limit: 500,
-    page: 1,
-    query: query,
-  });
-  const quantityDamaged = useWatch({
+
+  const quantityDamaged =
+    useWatch({
+      control,
+      name: `items.${index}.quantityDamaged`,
+    }) ?? 0;
+
+  const quantityReceived =
+    useWatch({
+      control,
+      name: `items.${index}.quantityReceived`,
+    }) ?? 0;
+
+  const allSelectedItems = useWatch({
     control,
-    name: `items.${index}.quantityDamaged`,
+    name: "items",
   });
 
-  const dataList = query
-    ? products?.data.data?.list
-    : defaultList?.length
-      ? defaultList
-      : products?.data.data?.list;
+  const selectedIssueItemId = useWatch({
+    control,
+    name: `items.${index}.issueItemId`,
+  });
 
-  const getProduct = (id: number) => {
-    return dataList?.find((p) => p.id === Number(id));
-  };
+  const selectedItem = availableItems.find((i) => i.id === selectedIssueItemId);
+
+  const unselectedItems = availableItems.filter((item) => {
+    return !allSelectedItems.some(
+      (selectedFormItem, idx) =>
+        selectedFormItem.issueItemId === item.id && idx !== index,
+    );
+  });
+
+  const filteredItems = unselectedItems.filter((item) =>
+    item.product.name.toLowerCase().includes(query.toLowerCase()),
+  );
 
   return (
-    <div className="group relative bg-background hover:bg-muted/10 transition-all duration-300 rounded-2xl border border-border/60 p-5 shadow-sm hover:shadow-md space-y-5">
+    <div className="group relative bg-muted/20 hover:bg-muted/40 transition-all duration-300 rounded-xl border border-border/40 p-4 flex flex-col gap-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <FormField
           control={control}
-          name={`items.${index}.itemId`}
+          name={`items.${index}.issueItemId`}
           render={({ field }) => (
             <FormItem className="flex-1 min-w-0">
-              <FormLabel className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest mb-1.5 flex items-center gap-2">
+              <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/80 flex items-center gap-2 tracking-widest mb-2">
                 <Box className="h-3 w-3" />
-                Product
+                Product to Return
               </FormLabel>
               <FormControl>
                 <SearchableSelect
                   query={query}
                   onQueryChange={setQuery}
                   onValueChange={(val) => field.onChange(Number(val))}
-                  isLoading={isLoadingProducts}
+                  isLoading={false}
                 >
                   <SearchableSelectTrigger asChild>
                     <Button
                       type="button"
-                      className="w-full justify-between h-11 px-3 bg-muted/20 border-transparent hover:border-primary/30 transition-all"
+                      className="w-full justify-between h-14 px-4 bg-background hover:bg-muted/30 border-dashed border-2 hover:border-primary/50 transition-all duration-300"
                       variant={"outline"}
                     >
-                      {getProduct(field.value) ? (
-                        <div className="flex items-center gap-2.5 text-left min-w-0">
-                          <Package className="h-4 w-4 text-primary shrink-0" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-bold truncate">
-                              {getProduct(field.value)?.name}
+                      {selectedItem ? (
+                        <div className="flex items-center gap-3 text-left">
+                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                            <Package className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold tracking-tight">
+                              {selectedItem.product.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-medium flex items-center gap-1">
+                              Issued: {selectedItem.quantity} Units
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground/50 text-xs">
-                          Select Product...
-                        </span>
+                        <div className="flex items-center gap-3 text-muted-foreground/60">
+                          <div className="h-9 w-9 rounded-full bg-muted/40 flex items-center justify-center border border-dashed border-muted-foreground/20">
+                            <Package className="h-5 w-5" />
+                          </div>
+                          <span className="font-medium">Select Product...</span>
+                        </div>
                       )}
-                      <ChevronRight className="h-4 w-4 opacity-20 shrink-0" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-30" />
                     </Button>
                   </SearchableSelectTrigger>
-                  <SearchableSelectContent className="w-[350px]">
+                  <SearchableSelectContent>
                     <SearchableSelectInput placeholder="Search items..." />
-                    <SearchableSelectList className="max-h-[280px] custom-scrollbar">
+                    <SearchableSelectList className="max-h-[250px] custom-scrollbar">
                       <SearchableSelectVacuum
-                        listLength={dataList?.length ?? 0}
+                        listLength={filteredItems.length}
                       />
-                      {dataList?.map((product) => (
+                      {filteredItems.map((item) => (
                         <SearchableSelectItem
-                          key={product.id}
-                          value={product.id.toString()}
-                          className="py-2.5"
+                          key={item.id}
+                          value={item.id.toString()}
+                          className="py-3 px-3 cursor-pointer"
                         >
-                          <div className="flex items-center justify-between w-full gap-3">
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-sm truncate">
-                                {product.name}
-                              </span>
-                              <span className="text-[9px] text-muted-foreground uppercase font-bold">
-                                {product.category.name}
-                              </span>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <div className="text-[8px] text-muted-foreground uppercase">
-                                Stock: {product.stock.quantity}
+                          <div className="flex flex-col gap-1.5 w-full">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-primary/70" />
+                                <span className="font-bold text-sm">
+                                  {item.product.name}
+                                </span>
                               </div>
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] uppercase font-bold px-1.5 py-0 h-4 bg-primary/5 text-primary border-primary/20"
+                              >
+                                {item.quantity} ISSUED
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
+                              Prod ID: {item.product.id}
                             </div>
                           </div>
                         </SearchableSelectItem>
@@ -262,87 +399,128 @@ function ProductSelect({
             </FormItem>
           )}
         />
-        <div className="pt-7 shrink-0">
+        <div className="pt-8 shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={() => handleDeleteItem(index)}
-            className="h-10 w-10 rounded-xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all"
+            className="h-10 w-10 rounded-xl text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <Separator className="bg-border/40" />
+      {selectedItem && (
+        <>
+          <Separator className="bg-border/40" />
+          <div className="flex items-end gap-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={control}
+                name={`items.${index}.quantityReceived`}
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/80 flex items-center gap-2 tracking-widest">
+                      <RotateCcw className="h-3 w-3" />
+                      Returned Qty
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative group/input">
+                        <Input
+                          type="number"
+                          className="h-11 pr-24 bg-background/60 focus:bg-background transition-all border-border/60 focus:border-primary/50 font-mono font-bold text-base"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground/40 flex items-center gap-1.5 pointer-events-none">
+                          / {selectedItem.quantity} ISSUED
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-[10px] font-bold" />
+                  </FormItem>
+                )}
+              />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <FormField
-          control={control}
-          name={`items.${index}.quantityReturned`}
-          render={({ field }) => (
-            <FormItem className="space-y-1.5">
-              <FormLabel className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest flex items-center gap-2">
-                <RotateCcw className="h-3 w-3 text-primary" />
-                Quantity Returned
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  className="h-11 bg-muted/20 border-transparent focus:bg-background focus:border-primary/30 font-mono font-bold text-sm"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="text-[9px]" />
-            </FormItem>
-          )}
-        />
+              <FormField
+                control={control}
+                name={`items.${index}.quantityDamaged`}
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/80 flex items-center gap-2 tracking-widest">
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                      Damaged Qty
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        className="h-11 bg-background/60 focus:bg-background transition-all border-border/60 focus:border-destructive/50 font-mono font-bold text-base"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[10px] font-bold" />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <FormField
-          control={control}
-          name={`items.${index}.quantityDamaged`}
-          render={({ field }) => (
-            <FormItem className="space-y-1.5">
-              <FormLabel className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest flex items-center gap-2">
-                <Trash2 className="h-3 w-3 text-destructive" />
-                Quantity Damaged
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  className="h-11 bg-muted/20 border-transparent focus:bg-background focus:border-destructive/30 font-mono font-bold text-sm"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage className="text-[9px]" />
-            </FormItem>
-          )}
-        />
-      </div>
+            <div className="pb-0.5 shrink-0 hidden sm:block">
+              {quantityReceived + quantityDamaged === selectedItem.quantity ? (
+                <div
+                  className="h-11 w-11 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center animate-in zoom-in duration-300"
+                  title="Full quantity returned"
+                >
+                  <CheckCircle2 className="h-6 w-6 text-green-500" />
+                </div>
+              ) : quantityReceived > 0 &&
+                quantityReceived < selectedItem.quantity ? (
+                <div
+                  className="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center animate-in zoom-in duration-300"
+                  title="Partial quantity returned"
+                >
+                  <Info className="h-6 w-6 text-amber-500" />
+                </div>
+              ) : (
+                <div
+                  className="h-11 w-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center animate-in zoom-in duration-300"
+                  title="No quantity returned"
+                >
+                  <AlertCircle className="h-6 w-6 text-red-500" />
+                </div>
+              )}
+            </div>
+          </div>
 
-      {(quantityDamaged ?? 0) > 0 && (
-        <FormField
-          control={control}
-          name={`items.${index}.reason`}
-          render={({ field }) => (
-            <FormItem className="space-y-1.5">
-              <FormLabel className="text-[9px] uppercase font-black text-muted-foreground/60 tracking-widest flex items-center gap-2">
-                <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                Reason (Optional)
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Specific reason for this item..."
-                  className="h-11 bg-muted/20 border-transparent focus:bg-background focus:border-primary/30 text-sm"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="text-[9px]" />
-            </FormItem>
+          {(quantityDamaged ?? 0) > 0 && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <FormField
+                control={control}
+                name={`items.${index}.reason`}
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-[10px] uppercase font-black text-muted-foreground/80 flex items-center gap-2 tracking-widest">
+                      <MessageSquare className="h-3 w-3 text-muted-foreground" />
+                      Damage Reason
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Please provide details about the damage..."
+                        className="h-11 bg-background/60 focus:bg-background transition-all border-border/60 focus:border-primary/50 text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[10px] font-bold" />
+                  </FormItem>
+                )}
+              />
+            </div>
           )}
-        />
+        </>
       )}
     </div>
   );

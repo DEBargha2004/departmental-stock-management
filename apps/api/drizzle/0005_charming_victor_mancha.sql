@@ -1,0 +1,1 @@
+ALTER TABLE "issue_request_item" ADD COLUMN "return_status" text DEFAULT 'pending';

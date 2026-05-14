@@ -16,7 +16,7 @@ import StockBatchesPage from "./pages/stock-batches/index";
 import AuthorizationLayout from "./layouts/authorization-layout";
 import IssueRequestsPage from "./pages/issue-requests/index";
 import ReturnRequestsPage from "./pages/return-requests/index";
-
+import WelcomePage from "./pages/welcome";
 
 export const router = createBrowserRouter([
   {
@@ -45,7 +45,11 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           {
-            path: "/",
+            index: true,
+            Component: WelcomePage,
+          },
+          {
+            path: "/dashboard",
             Component: () => (
               <AuthorizationLayout module="dashboard">
                 <DashboardPage />

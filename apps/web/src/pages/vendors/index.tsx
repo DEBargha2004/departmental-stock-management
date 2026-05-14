@@ -52,6 +52,8 @@ import CreateVendorForm from "@/components/custom/forms/vendor-create";
 import { getVendorRequest } from "@/controllers/vendor/api";
 import ActiveBadge from "@/components/custom/active-badge";
 import { formatDate } from "@/lib/utils";
+import PermissionChecker from "@/components/custom/permission-checker";
+import { PERMISSIONS } from "@repo/contracts/permission";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -159,21 +161,23 @@ export default function VendorsPage() {
             Maintain supplier relationships, contacts, and performance metrics.
           </p>
         </div>
-        <ControlledFormDialog
-          form={createForm}
-          onSubmit={handleAddVendor}
-          FormComponent={CreateVendorForm}
-          heading={{
-            title: "Create Vendor",
-            description: "Add a new vendor to your system",
-          }}
-          onClose={() => createForm.reset(getDefaultVendorCreateValues())}
-        >
-          <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
-            <Building2 className="h-4 w-4" strokeWidth={2} />
-            <span className="font-medium">Add Vendor</span>
-          </Button>
-        </ControlledFormDialog>
+        <PermissionChecker requiredPermissions={[PERMISSIONS.VENDOR_CREATE]}>
+          <ControlledFormDialog
+            form={createForm}
+            onSubmit={handleAddVendor}
+            FormComponent={CreateVendorForm}
+            heading={{
+              title: "Create Vendor",
+              description: "Add a new vendor to your system",
+            }}
+            onClose={() => createForm.reset(getDefaultVendorCreateValues())}
+          >
+            <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
+              <Building2 className="h-4 w-4" strokeWidth={2} />
+              <span className="font-medium">Add Vendor</span>
+            </Button>
+          </ControlledFormDialog>
+        </PermissionChecker>
         <ControlledFormDialog
           form={updateForm}
           onSubmit={handleUpdateVendor}
@@ -228,153 +232,172 @@ export default function VendorsPage() {
       </div>
 
       {/* Vendors Table */}
-      <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Vendor
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Contact Person
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Address
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Status
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Last Ordered
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: searchParams.limit }).map((_, index) => (
-                <TableRow key={index} className="border-input/40">
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-32" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-48" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-32" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-
-                  <TableCell className="py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (dataList?.list.length ?? 0) > 0 ? (
-              dataList?.list?.map((vendor) => (
-                <TableRow
-                  key={vendor.id}
-                  className="group hover:bg-muted/40 transition-colors border-input/40"
-                >
-                  <TableCell className="font-medium py-3 text-sm">
-                    {vendor.name}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-foreground">
-                    <strong className="block first-letter:uppercase">
-                      {vendor.contactPerson}
-                    </strong>
-                    <div className="flex items-center">
-                      <span>{vendor.phone}</span> <Dot />
-                      <span>{vendor.email || "N/A"}</span>
-                    </div>
-                  </TableCell>
-
-                  <TableCell className="py-3 text-sm text-muted-foreground whitespace-pre">
-                    {vendor.address || "N/A"}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm">
-                    <ActiveBadge isActive={vendor.isActive} />
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    {vendor.lastOrderDate
-                      ? formatDate(vendor.lastOrderDate, {
-                          month: "short",
-                          year: "numeric",
-                          day: "numeric",
-                        })
-                      : "Never Ordered"}
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleViewVendor(vendor.id)}
-                      >
-                        <Eye className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditVendorButtonClick(vendor.id)}
-                      >
-                        <Edit className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                      <WarningDialog
-                        id={vendor.id}
-                        handler={handleDeleteVendor}
-                        heading={{
-                          title: "Delete Vendor",
-                          description:
-                            "Are you sure you want to delete this vendor? This action is irreversible.",
-                        }}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                        </Button>
-                      </WarningDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <Store className="h-6 w-6 text-muted-foreground/50" />
-                    </div>
-                    <p className="font-medium text-foreground">
-                      No vendors found
-                    </p>
-                    <p>Try adjusting your search or filters</p>
-                  </div>
-                </TableCell>
+      <PermissionChecker requiredPermissions={[PERMISSIONS.VENDOR_READ]}>
+        <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Vendor
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Contact Person
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Address
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Status
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Last Ordered
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
+                  Actions
+                </TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: searchParams.limit }).map((_, index) => (
+                  <TableRow key={index} className="border-input/40">
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-48" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+
+                    <TableCell className="py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (dataList?.list.length ?? 0) > 0 ? (
+                dataList?.list?.map((vendor) => (
+                  <TableRow
+                    key={vendor.id}
+                    className="group hover:bg-muted/40 transition-colors border-input/40"
+                  >
+                    <TableCell className="font-medium py-3 text-sm">
+                      {vendor.name}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-foreground">
+                      <strong className="block first-letter:uppercase">
+                        {vendor.contactPerson}
+                      </strong>
+                      <div className="flex items-center">
+                        <span>{vendor.phone}</span> <Dot />
+                        <span>{vendor.email || "N/A"}</span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-pre">
+                      {vendor.address || "N/A"}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm">
+                      <ActiveBadge isActive={vendor.isActive} />
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      {vendor.lastOrderDate
+                        ? formatDate(vendor.lastOrderDate, {
+                            month: "short",
+                            year: "numeric",
+                            day: "numeric",
+                          })
+                        : "Never Ordered"}
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.VENDOR_READ]}
+                          className="h-8 w-8"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleViewVendor(vendor.id)}
+                          >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.VENDOR_UPDATE]}
+                          className="h-8 w-8"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              handleEditVendorButtonClick(vendor.id)
+                            }
+                          >
+                            <Edit className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.VENDOR_DELETE]}
+                          className="h-8 w-8"
+                        >
+                          <WarningDialog
+                            id={vendor.id}
+                            handler={handleDeleteVendor}
+                            heading={{
+                              title: "Delete Vendor",
+                              description:
+                                "Are you sure you want to delete this vendor? This action is irreversible.",
+                            }}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            </Button>
+                          </WarningDialog>
+                        </PermissionChecker>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-64 text-center text-sm text-muted-foreground border-input/40"
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <Store className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <p className="font-medium text-foreground">
+                        No vendors found
+                      </p>
+                      <p>Try adjusting your search or filters</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </PermissionChecker>
 
       {/* Pagination & Page Limit Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground py-2 shrink-0">

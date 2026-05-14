@@ -48,11 +48,13 @@ export default function CreateIssueRequestForm({
   form,
   onSubmit,
   defaultList,
+  label = "Create Issue Request",
 }: TFormProps<TIssueRequestCreateSchema> & {
   defaultList?: {
     users?: TUser[];
     products?: TProduct[];
   };
+  label?: string;
 }) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -250,11 +252,7 @@ export default function CreateIssueRequestForm({
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
             <div className="flex items-center gap-3">
-              <span>
-                {selectedUserId
-                  ? "Update Issue Request"
-                  : "Create Issue Request"}
-              </span>
+              <span>{label}</span>
               <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </div>
           )}

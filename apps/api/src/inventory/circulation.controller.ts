@@ -41,10 +41,12 @@ export class CirculationController {
   async getIssueRequests(
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('query') query?: string,
   ) {
     const res = await this.circulationService.getIssueRequests({
       limit,
       page,
+      query,
     });
 
     return ResponseBuilder.success(res, 'Issue requests fetched successfully');
@@ -63,10 +65,12 @@ export class CirculationController {
   async getReturnRequests(
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('query') query?: string,
   ) {
     const res = await this.circulationService.getReturnRequests({
       limit,
       page,
+      query,
     });
 
     return ResponseBuilder.success(res, 'Return requests fetched successfully');
@@ -75,7 +79,7 @@ export class CirculationController {
   @Auth('return-request.read')
   @Get('return-request/:id')
   async getReturnRequest(@Param('id', ParseIntPipe) id: number) {
-    const res = await this.circulationService.getReturnRequest(id);
+    const res = await this.inventoryService.getReturnRequest(id);
 
     return ResponseBuilder.success(res, 'Return request fetched successfully');
   }

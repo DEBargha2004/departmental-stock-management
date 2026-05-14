@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TJWTPayload } from 'src/authentication/auth.service';
 import { DATABASE_MODULE, type TDB } from 'src/database/db.module';
 import { ROLE_ACCESS_LIST } from './role-access.constants';
+import { ROLE_PERMISSION_LIST } from './role-permission.constants';
 
 @Injectable()
 export class AuthorizationService {
@@ -13,5 +14,13 @@ export class AuthorizationService {
     );
 
     return moduleAccessList?.modules ?? [];
+  }
+
+  async getUserPermissionList(user: TJWTPayload) {
+    const permissionList = ROLE_PERMISSION_LIST.find(
+      ({ role }) => role === user.role,
+    );
+
+    return permissionList?.permissions ?? [];
   }
 }

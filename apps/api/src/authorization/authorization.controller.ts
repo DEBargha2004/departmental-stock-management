@@ -19,4 +19,16 @@ export class AuthorizationController {
       'Role access list fetched successfully',
     );
   }
+
+  @Get('/permissions')
+  @Auth()
+  async getPermissionList(@CurrentUser() user: TJWTPayload) {
+    const permissions =
+      await this.authorizationService.getUserPermissionList(user);
+
+    return ResponseBuilder.success(
+      permissions,
+      'Permission list fetched successfully',
+    );
+  }
 }

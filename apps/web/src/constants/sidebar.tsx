@@ -18,7 +18,7 @@ export const sidebarItems = [
     id: "dashboard",
     icon: LayoutDashboard,
     label: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     isActive(path) {
       return path === this.href;
     },

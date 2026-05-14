@@ -35,8 +35,10 @@ import {
   type ENTITY_TYPE,
 } from "@repo/contracts/status";
 import { formatDate } from "@/lib/utils";
-import type { TAuditLog } from "@/controllers/audit/api";
+import type { TAuditLog } from "@repo/contracts/audit";
 import { ActionBadge } from "./_components/action-badge";
+import PermissionChecker from "@/components/custom/permission-checker";
+import { PERMISSIONS } from "@repo/contracts/permission";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -98,13 +100,15 @@ export default function ActivityLogPage() {
             Monitor system events, user actions, and automated protocols.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm bg-transparent border-input/60 hover:bg-muted text-foreground"
-        >
-          <Activity className="h-4 w-4" strokeWidth={2} />
-          <span className="font-medium text-foreground">Export Logs</span>
-        </Button>
+        <PermissionChecker requiredPermissions={[PERMISSIONS.AUDIT_READ]}>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm bg-transparent border-input/60 hover:bg-muted text-foreground"
+          >
+            <Activity className="h-4 w-4" strokeWidth={2} />
+            <span className="font-medium text-foreground">Export Logs</span>
+          </Button>
+        </PermissionChecker>
       </div>
 
       {/* Filters Toolbar */}
@@ -168,128 +172,135 @@ export default function ActivityLogPage() {
       </div>
 
       {/* Activity Table */}
-      <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                User
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Action
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Entity
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Description
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Timestamp
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
-                Details
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i} className="border-input/40">
-                  <TableCell className="py-3">
-                    <Skeleton className="h-8 w-32" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-40" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-28" />
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <Skeleton className="h-8 w-8 ml-auto" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : logs.length > 0 ? (
-              logs.map((log) => (
-                <TableRow
-                  key={log.id}
-                  className="group hover:bg-muted/40 transition-colors border-input/40"
-                >
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                        <User className="h-4 w-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {log.user?.name || "System"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {log.user?.email || "system@internal"}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <ActionBadge action={log.action} />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="capitalize">
-                        {log.entityType.replace("_", " ")}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                    {log.description || "No description"}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">
-                    {formatDate(log.createdAt, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleViewLog(log)}
-                    >
-                      <Eye className="h-4 w-4" strokeWidth={1.5} />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <FileText className="h-6 w-6 text-muted-foreground/50" />
-                    </div>
-                    <p className="font-medium text-foreground">
-                      No log entries found
-                    </p>
-                    <p>Try adjusting your search or filters</p>
-                  </div>
-                </TableCell>
+      <PermissionChecker requiredPermissions={[PERMISSIONS.AUDIT_READ]}>
+        <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  User
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Action
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Entity
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Description
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Timestamp
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
+                  Details
+                </TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i} className="border-input/40">
+                    <TableCell className="py-3">
+                      <Skeleton className="h-8 w-32" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-40" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-28" />
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <Skeleton className="h-8 w-8 ml-auto" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : logs.length > 0 ? (
+                logs.map((log) => (
+                  <TableRow
+                    key={log.id}
+                    className="group hover:bg-muted/40 transition-colors border-input/40"
+                  >
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {log.user?.name || "System"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {log.user?.email || "system@internal"}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <ActionBadge action={log.action} />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="capitalize">
+                          {log.entityType.replace("_", " ")}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground max-w-[200px] truncate">
+                      {log.description || "No description"}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground whitespace-nowrap">
+                      {formatDate(log.createdAt, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <PermissionChecker
+                        requiredPermissions={[PERMISSIONS.AUDIT_READ]}
+                        className="h-8 w-8"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleViewLog(log)}
+                        >
+                          <Eye className="h-4 w-4" strokeWidth={1.5} />
+                        </Button>
+                      </PermissionChecker>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="h-64 text-center text-sm text-muted-foreground border-input/40"
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <FileText className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <p className="font-medium text-foreground">
+                        No log entries found
+                      </p>
+                      <p>Try adjusting your search or filters</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </PermissionChecker>
 
       {/* Pagination & Page Limit Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground py-2 shrink-0">

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ISSUE_REQUEST_RETURN_STATUS } from "../status.js";
 
 export const issueRequestCreateSchema = z
   .object({
@@ -19,7 +20,7 @@ export const issueRequestCreateSchema = z
           quantity: z.coerce
             .number<number>()
             .int("Quantity must be an integer")
-            .nonnegative("Quantity must be non-negative"),
+            .positive("Quantity must be greater than 0"),
         }),
       )
       .min(1, "At least one item is required"),
@@ -69,8 +70,15 @@ export const returnRequestCreateSchema = z
       .array(
         z.object({
           issueItemId: z.coerce.number<number>().nonnegative(),
-          quantityReturned: z.coerce.number<number>().nonnegative(),
-          quantityDamaged: z.coerce.number<number>().optional(),
+          quantityReceived: z.coerce
+            .number<number>()
+            .int("Quantity must be an integer")
+            .positive("Quantity must be greater than 0"),
+          quantityDamaged: z.coerce
+            .number<number>()
+            .int("Quantity must be an integer")
+            .nonnegative("Quantity must be non-negative")
+            .optional(),
           reason: z.string().optional(),
         }),
       )
@@ -123,6 +131,7 @@ export type TIssueRequestItem = {
   id: number;
   quantity: number;
   isConsumable: boolean;
+  returnStatus: ISSUE_REQUEST_RETURN_STATUS;
   product: TProductForCirculation;
 };
 
@@ -148,7 +157,10 @@ export type TReturnRequestItem = {
 export type TReturnRequest = {
   id: number;
   issueRequestId: number;
+  issueCode: string;
   returnDate: Date;
   createdAt: Date;
+  issuedTo: TUserForCirculation;
+  issuedBy: TUserForCirculation;
   items: TReturnRequestItem[];
 };

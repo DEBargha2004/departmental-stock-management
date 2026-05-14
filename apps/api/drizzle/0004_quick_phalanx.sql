@@ -1,0 +1,1 @@
+ALTER TABLE "issue_request" DROP COLUMN "return_status";

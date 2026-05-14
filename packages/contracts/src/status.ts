@@ -15,10 +15,6 @@ export const PURCHASE_ORDER_STATUS = {
   CANCELLED: "cancelled",
 } as const;
 
-
-
-
-
 export const MOVEMENT_TYPE = {
   ISSUE: "issue",
   RETURN: "return",
@@ -54,15 +50,21 @@ export const ACTOR_TYPE = {
   SYSTEM: "system",
 } as const;
 
+export const ISSUE_REQUEST_RETURN_STATUS = {
+  RETURNED: "returned",
+  PENDING: "pending",
+  PARTIALLY_RETURNED: "partially_returned",
+  NON_RETURNABLE: "non_returnable",
+} as const;
+
 export type STATUS = (typeof STATUS)[keyof typeof STATUS];
 export type PRODUCT_STATUS =
   (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
 export type MOVEMENT_TYPE = (typeof MOVEMENT_TYPE)[keyof typeof MOVEMENT_TYPE];
 export type PURCHASE_ORDER_STATUS =
   (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
-
-
-
+export type ISSUE_REQUEST_RETURN_STATUS =
+  (typeof ISSUE_REQUEST_RETURN_STATUS)[keyof typeof ISSUE_REQUEST_RETURN_STATUS];
 export type AUDIT_ACTION = (typeof AUDIT_ACTION)[keyof typeof AUDIT_ACTION];
 export type ENTITY_TYPE = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];
 export type ACTOR_TYPE = (typeof ACTOR_TYPE)[keyof typeof ACTOR_TYPE];
@@ -70,13 +72,13 @@ export type ACTOR_TYPE = (typeof ACTOR_TYPE)[keyof typeof ACTOR_TYPE];
 export const STATUS_LIST = Object.values(STATUS);
 export const PRODUCT_STATUS_LIST = Object.values(PRODUCT_STATUS);
 export const PURCHASE_ORDER_STATUS_LIST = Object.values(PURCHASE_ORDER_STATUS);
-
-
-
 export const MOVEMENT_TYPE_LIST = Object.values(MOVEMENT_TYPE);
 export const AUDIT_ACTION_LIST = Object.values(AUDIT_ACTION);
 export const ENTITY_TYPE_LIST = Object.values(ENTITY_TYPE);
 export const ACTOR_TYPE_LIST = Object.values(ACTOR_TYPE);
+export const ISSUE_REQUEST_RETURN_STATUS_LIST = Object.values(
+  ISSUE_REQUEST_RETURN_STATUS,
+);
 
 export const STATUS_FORMATTED = [
   {
@@ -118,10 +120,6 @@ export const PURCHASE_ORDER_STATUS_FORMATTED = [
     label: "Cancelled",
   },
 ] as const satisfies { id: PURCHASE_ORDER_STATUS; label: string }[];
-
-
-
-
 
 export const MOVEMENT_TYPE_FORMATTED = [
   {
@@ -224,6 +222,21 @@ export const ACTOR_TYPE_FORMATTED = [
   },
 ] as const satisfies { id: ACTOR_TYPE; label: string }[];
 
+export const ISSUE_REQUEST_RETURN_STATUS_FORMATTED = [
+  {
+    id: "returned",
+    label: "Returned",
+  },
+  {
+    id: "pending",
+    label: "Pending",
+  },
+  {
+    id: "partially_returned",
+    label: "Partially Returned",
+  },
+] as const satisfies { id: ISSUE_REQUEST_RETURN_STATUS; label: string }[];
+
 export const getStatusObject = (status: STATUS) => {
   return STATUS_FORMATTED.find((s) => s.id === status)!;
 };
@@ -235,10 +248,6 @@ export const getProductStatusObject = (status: PRODUCT_STATUS) => {
 export const getPurchaseOrderStatusObject = (status: PURCHASE_ORDER_STATUS) => {
   return PURCHASE_ORDER_STATUS_FORMATTED.find((s) => s.id === status)!;
 };
-
-
-
-
 
 export const getMovementTypeObject = (type: MOVEMENT_TYPE) => {
   return MOVEMENT_TYPE_FORMATTED.find((t) => t.id === type)!;
@@ -254,4 +263,10 @@ export const getEntityTypeObject = (entityType: ENTITY_TYPE) => {
 
 export const getActorTypeObject = (actorType: ACTOR_TYPE) => {
   return ACTOR_TYPE_FORMATTED.find((e) => e.id === actorType)!;
+};
+
+export const getIssueRequestReturnStatusObject = (
+  status: ISSUE_REQUEST_RETURN_STATUS,
+) => {
+  return ISSUE_REQUEST_RETURN_STATUS_FORMATTED.find((s) => s.id === status)!;
 };

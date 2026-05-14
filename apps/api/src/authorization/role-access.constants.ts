@@ -6,17 +6,30 @@ type RoleAccess = {
   modules: MODULE[];
 };
 
+const notImplemented: MODULE[] = ['dashboard'];
+
+const adminModuleList = MODULE_LIST.filter(
+  (it) => !notImplemented.includes(it),
+);
+const facultyModuleList: MODULE[] = [
+  'products',
+  'users',
+  'issue_requests',
+  'return_requests',
+];
+const studentModuleList: MODULE[] = ['products'];
+
 export const ROLE_ACCESS_LIST = [
   {
     role: 'admin',
-    modules: MODULE_LIST,
+    modules: adminModuleList,
   },
   {
     role: 'faculty',
-    modules: ['products', 'users', 'issue_requests', 'return_requests'],
+    modules: facultyModuleList,
   },
   {
     role: 'student',
-    modules: [],
+    modules: studentModuleList,
   },
 ] as const satisfies RoleAccess[];

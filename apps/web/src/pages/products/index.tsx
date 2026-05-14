@@ -58,6 +58,8 @@ import { getItemRequest } from "@/controllers/product/api";
 import { useGetAllCategoriesQuery } from "@/controllers/category/query";
 import CreateProductForm from "@/components/custom/forms/product-create-form";
 import UpdateProductForm from "@/components/custom/forms/product-update-form";
+import PermissionChecker from "@/components/custom/permission-checker";
+import { PERMISSIONS } from "@repo/contracts/permission";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -193,21 +195,23 @@ export default function ProductsPage() {
             Track and manage individual inventory products, assets, and levels.
           </p>
         </div>
-        <ControlledFormDialog
-          form={createForm}
-          onSubmit={handleAddProduct}
-          FormComponent={CreateProductForm}
-          heading={{
-            title: "Create Product",
-            description: "Add a new product to the inventory.",
-          }}
-          onClose={() => createForm.reset(getDefaultProductCreateValues())}
-        >
-          <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            <span className="font-medium">Add Product</span>
-          </Button>
-        </ControlledFormDialog>
+        <PermissionChecker requiredPermissions={[PERMISSIONS.PRODUCT_CREATE]}>
+          <ControlledFormDialog
+            form={createForm}
+            onSubmit={handleAddProduct}
+            FormComponent={CreateProductForm}
+            heading={{
+              title: "Create Product",
+              description: "Add a new product to the inventory.",
+            }}
+            onClose={() => createForm.reset(getDefaultProductCreateValues())}
+          >
+            <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              <span className="font-medium">Add Product</span>
+            </Button>
+          </ControlledFormDialog>
+        </PermissionChecker>
         <ControlledFormDialog
           form={updateForm}
           onSubmit={handleUpdateProduct}
@@ -283,184 +287,203 @@ export default function ProductsPage() {
       </div>
 
       {/* Products Table */}
-      <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Product Details
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Category
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Quantity
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Price
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Status
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: searchParams.limit }).map((_, index) => (
-                <TableRow key={index} className="border-input/40">
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-40" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-12" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (dataList?.list.length ?? 0) > 0 ? (
-              dataList?.list.map((item) => (
-                <TableRow
-                  key={item.id}
-                  className="group hover:bg-muted/40 transition-colors border-input/40"
-                >
-                  <TableCell className="py-3">
-                    <div className="flex flex-col space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm">{item.name}</span>
-                        {item.isConsumable && (
-                          <Badge
-                            variant="secondary"
-                            className="h-4 px-1.5 text-[8px] uppercase tracking-tighter bg-primary/10 text-primary border-primary/20 font-black gap-0.5"
-                          >
-                            <Zap className="h-2 w-2 fill-primary" />
-                            Consumable
-                          </Badge>
+      <PermissionChecker
+        requiredPermissions={[PERMISSIONS.PRODUCT_READ, PERMISSIONS.STOCK_READ]}
+      >
+        <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Product Details
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Category
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Quantity
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Price
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Status
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: searchParams.limit }).map((_, index) => (
+                  <TableRow key={index} className="border-input/40">
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-40" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-12" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (dataList?.list.length ?? 0) > 0 ? (
+                dataList?.list.map((item) => (
+                  <TableRow
+                    key={item.id}
+                    className="group hover:bg-muted/40 transition-colors border-input/40"
+                  >
+                    <TableCell className="py-3">
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{item.name}</span>
+                          {item.isConsumable && (
+                            <Badge
+                              variant="secondary"
+                              className="h-4 px-1.5 text-[8px] uppercase tracking-tighter bg-primary/10 text-primary border-primary/20 font-black gap-0.5"
+                            >
+                              <Zap className="h-2 w-2 fill-primary" />
+                              Consumable
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60 font-mono">
+                          ID: {item.id}
+                        </span>
+                        {item.description && (
+                          <p className="text-[10px] text-muted-foreground/80 line-clamp-1 max-w-[200px]">
+                            {item.description}
+                          </p>
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground/60 font-mono">
-                        ID: {item.id}
-                      </span>
-                      {item.description && (
-                        <p className="text-[10px] text-muted-foreground/80 line-clamp-1 max-w-[200px]">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    {item.category?.name ?? "-"}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm font-medium">
-                    {item.stock.quantity ?? 0}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    ₹{item.price.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    {/* Status logic can be improved based on quantity vs minStockLevel if needed, 
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      {item.category?.name ?? "-"}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm font-medium">
+                      {item.stock.quantity ?? 0}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      ₹{item.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="py-3">
+                      {/* Status logic can be improved based on quantity vs minStockLevel if needed, 
                         but here we use the backend logic if provided. 
                         Actually the backend doesn't return a explicit string status in list view, 
                         so we can derive it here. */}
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          (item.stock.quantity ?? 0) === 0
-                            ? getStatusColor("out_of_stock")
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            (item.stock.quantity ?? 0) === 0
+                              ? getStatusColor("out_of_stock")
+                              : (item.stock.quantity ?? 0) <=
+                                  (item.stock.minStockLevel ?? 0)
+                                ? getStatusColor("low_stock")
+                                : getStatusColor("in_stock")
+                          }`}
+                        />
+                        <span className="text-sm text-muted-foreground capitalize">
+                          {(item.stock.quantity ?? 0) === 0
+                            ? "Out of Stock"
                             : (item.stock.quantity ?? 0) <=
                                 (item.stock.minStockLevel ?? 0)
-                              ? getStatusColor("low_stock")
-                              : getStatusColor("in_stock")
-                        }`}
-                      />
-                      <span className="text-sm text-muted-foreground capitalize">
-                        {(item.stock.quantity ?? 0) === 0
-                          ? "Out of Stock"
-                          : (item.stock.quantity ?? 0) <=
-                              (item.stock.minStockLevel ?? 0)
-                            ? "Low Stock"
-                            : "In Stock"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleViewProduct(item.id)}
-                      >
-                        <Eye className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditProduct(item.id)}
-                      >
-                        <Edit className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                      <WarningDialog
-                        id={item.id}
-                        handler={handleDeleteProduct}
-                        heading={{
-                          title: "Delete Product",
-                          description:
-                            "Are you sure you want to delete this product? This action is irreversible.",
-                        }}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              ? "Low Stock"
+                              : "In Stock"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.PRODUCT_READ]}
+                          className="h-8 w-8"
                         >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                        </Button>
-                      </WarningDialog>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleViewProduct(item.id)}
+                          >
+                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.PRODUCT_UPDATE]}
+                          className="h-8 w-8"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditProduct(item.id)}
+                          >
+                            <Edit className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[PERMISSIONS.PRODUCT_DELETE]}
+                          className="h-8 w-8"
+                        >
+                          <WarningDialog
+                            id={item.id}
+                            handler={handleDeleteProduct}
+                            heading={{
+                              title: "Delete Product",
+                              description:
+                                "Are you sure you want to delete this product? This action is irreversible.",
+                            }}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            </Button>
+                          </WarningDialog>
+                        </PermissionChecker>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-64 text-center text-sm text-muted-foreground border-input/40"
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <Box className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <p className="font-medium text-foreground">
+                        No products found
+                      </p>
+                      <p>Try adjusting your search or filters</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <Box className="h-6 w-6 text-muted-foreground/50" />
-                    </div>
-                    <p className="font-medium text-foreground">
-                      No products found
-                    </p>
-                    <p>Try adjusting your search or filters</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </PermissionChecker>
 
       {/* Pagination & Page Limit Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground py-2 shrink-0">

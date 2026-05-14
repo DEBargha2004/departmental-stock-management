@@ -62,6 +62,8 @@ import {
   PURCHASE_ORDER_STATUS_FORMATTED,
   type PURCHASE_ORDER_STATUS,
 } from "@repo/contracts/status";
+import PermissionChecker from "@/components/custom/permission-checker";
+import { PERMISSIONS } from "@repo/contracts/permission";
 import { useGetAllVendorsQuery } from "@/controllers/vendor/query";
 import { POStatusBadge } from "./_components/po-status";
 import {
@@ -71,8 +73,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PurchaseOrderItemList from "./_components/purchase-order-item-list";
-import type { TProduct } from "@/controllers/product/api";
-import type { TVendor } from "@/controllers/vendor/api";
+import type { TProduct } from "@repo/contracts/item";
+import type { TVendor } from "@repo/contracts/vendor";
 
 const pageLimits = [10, 20, 30, 40, 50];
 
@@ -205,23 +207,27 @@ export default function PurchaseOrdersPage() {
             fulfillment.
           </p>
         </div>
-        <ControlledFormDialog
-          form={createForm}
-          onSubmit={handleAddPO}
-          FormComponent={CreatePurchaseOrderForm}
-          heading={{
-            title: "Create Purchase Order",
-            description: "Issue a new purchase order to a vendor",
-          }}
-          onClose={() =>
-            createForm.reset(getDefaultPurchaseOrderCreateValues())
-          }
+        <PermissionChecker
+          requiredPermissions={[PERMISSIONS.PURCHASE_ORDER_CREATE]}
         >
-          <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            <span className="font-medium">New Order</span>
-          </Button>
-        </ControlledFormDialog>
+          <ControlledFormDialog
+            form={createForm}
+            onSubmit={handleAddPO}
+            FormComponent={CreatePurchaseOrderForm}
+            heading={{
+              title: "Create Purchase Order",
+              description: "Issue a new purchase order to a vendor",
+            }}
+            onClose={() =>
+              createForm.reset(getDefaultPurchaseOrderCreateValues())
+            }
+          >
+            <Button className="flex items-center gap-2 h-9 px-4 rounded-lg shadow-sm">
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              <span className="font-medium">New Order</span>
+            </Button>
+          </ControlledFormDialog>
+        </PermissionChecker>
         <ControlledFormDialog
           form={updateForm}
           onSubmit={handleUpdatePO}
@@ -299,153 +305,178 @@ export default function PurchaseOrdersPage() {
       </div>
 
       {/* Purchase Orders Table */}
-      <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Invoice ID
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Vendor
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Order Date
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Amount
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
-                Status
-              </TableHead>
-              <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: searchParams.limit }).map((_, index) => (
-                <TableRow key={index} className="border-input/40">
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-16" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-32" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-20" />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Skeleton className="h-5 w-24" />
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                      <Skeleton className="h-8 w-8" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (dataList?.list.length ?? 0) > 0 ? (
-              dataList?.list?.map((po) => (
-                <TableRow
-                  className="group hover:bg-muted/40 transition-colors border-input/40"
-                  key={po.id}
-                >
-                  <TableCell className="font-medium py-3 text-sm">
-                    {po.invoiceId}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm font-medium">
-                    {po.vendor.name}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm text-muted-foreground">
-                    {formatDate(po.orderDate, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm font-semibold">
-                    ₹
-                    {po.totalAmount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    })}
-                  </TableCell>
-                  <TableCell className="py-3 text-sm">
-                    <POStatusBadge status={po.status} />
-                  </TableCell>
-                  <TableCell className="py-3 text-right">
-                    <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Dialog>
-                        <DialogTrigger asChild>
+      <PermissionChecker
+        requiredPermissions={[PERMISSIONS.PURCHASE_ORDER_READ]}
+      >
+        <div className="border border-input/40 rounded-xl bg-card overflow-hidden shadow-sm flex flex-col">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Invoice ID
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Vendor
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Order Date
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Amount
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground h-11">
+                  Status
+                </TableHead>
+                <TableHead className="font-medium text-xs uppercase tracking-wider text-muted-foreground text-right h-11">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: searchParams.limit }).map((_, index) => (
+                  <TableRow key={index} className="border-input/40">
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-16" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-32" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-20" />
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Skeleton className="h-5 w-24" />
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (dataList?.list.length ?? 0) > 0 ? (
+                dataList?.list?.map((po) => (
+                  <TableRow
+                    className="group hover:bg-muted/40 transition-colors border-input/40"
+                    key={po.id}
+                  >
+                    <TableCell className="font-medium py-3 text-sm">
+                      {po.invoiceId}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm font-medium">
+                      {po.vendor.name}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      {formatDate(po.orderDate, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm font-semibold">
+                      ₹
+                      {po.totalAmount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="py-3 text-sm">
+                      <POStatusBadge status={po.status} />
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 flex-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PermissionChecker
+                          requiredPermissions={[
+                            PERMISSIONS.PURCHASE_ORDER_READ,
+                          ]}
+                          className="h-8 w-8"
+                        >
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              >
+                                <Eye className="h-4 w-4" strokeWidth={1.5} />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogTitle />
+                              <PurchaseOrderItemList po={po} />
+                            </DialogContent>
+                          </Dialog>
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[
+                            PERMISSIONS.PURCHASE_ORDER_UPDATE,
+                          ]}
+                          className="h-8 w-8"
+                        >
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditPOButtonClick(po.id)}
                           >
-                            <Eye className="h-4 w-4" strokeWidth={1.5} />
+                            <Edit className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogTitle />
-                          <PurchaseOrderItemList po={po} />
-                        </DialogContent>
-                      </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleEditPOButtonClick(po.id)}
-                      >
-                        <Edit className="h-4 w-4" strokeWidth={1.5} />
-                      </Button>
-                      <WarningDialog
-                        id={po.id}
-                        handler={handleDeletePO}
-                        heading={{
-                          title: "Delete Purchase Order",
-                          description:
-                            "Are you sure you want to delete this purchase order? This action cannot be undone.",
-                        }}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        </PermissionChecker>
+                        <PermissionChecker
+                          requiredPermissions={[
+                            PERMISSIONS.PURCHASE_ORDER_DELETE,
+                          ]}
+                          className="h-8 w-8"
                         >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                        </Button>
-                      </WarningDialog>
+                          <WarningDialog
+                            id={po.id}
+                            handler={handleDeletePO}
+                            heading={{
+                              title: "Delete Purchase Order",
+                              description:
+                                "Are you sure you want to delete this purchase order? This action cannot be undone.",
+                            }}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            </Button>
+                          </WarningDialog>
+                        </PermissionChecker>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-64 text-center text-sm text-muted-foreground border-input/40"
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <FileBox className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <p className="font-medium text-foreground">
+                        No purchase orders found
+                      </p>
+                      <p>Try adjusting your search or filters</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-64 text-center text-sm text-muted-foreground border-input/40"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <FileBox className="h-6 w-6 text-muted-foreground/50" />
-                    </div>
-                    <p className="font-medium text-foreground">
-                      No purchase orders found
-                    </p>
-                    <p>Try adjusting your search or filters</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </PermissionChecker>
 
       {/* Pagination & Page Limit Controls */}
       <div className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground py-2 shrink-0">

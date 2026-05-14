@@ -2,11 +2,8 @@ import { api } from "@/lib/axios";
 import type { PaginatedListResponse } from "@/types/list-response";
 import type { TSuccess } from "@/types/response";
 import type { TAuditLogQuery } from "@repo/contracts/query";
-import type { AUDIT_ACTION, ENTITY_TYPE } from "@repo/contracts/status";
 import type { AxiosResponse } from "axios";
 import type { TAuditLog } from "@repo/contracts/audit";
-
-
 
 export async function getAuditLogsRequest({
   query = "",
@@ -27,4 +24,3 @@ export async function getAuditLogsRequest({
     },
   });
 }
-

@@ -42,6 +42,7 @@ import {
 } from '@repo/contracts/circulation';
 import { UserService } from 'src/user/user.service';
 import { CirculationService } from './circulation.service';
+import { ISSUE_REQUEST_RETURN_STATUS } from '@repo/contracts/status';
 
 @Injectable()
 export class InventoryService {
@@ -1073,6 +1074,32 @@ export class InventoryService {
     });
   }
 
+  async getReturnRequest(id: number, trx?: Transaction) {
+    const db = trx ?? this.db;
+
+    return await db.transaction(async (tx) => {
+      const returnRequest = await this.circulationService.getReturnRequest(
+        id,
+        tx,
+      );
+      if (!returnRequest) {
+        throw new NotFoundException(`Return request with id ${id} not found`);
+      }
+
+      const issueRequest = await this.circulationService.getIssueRequest(
+        returnRequest.issueRequestId,
+        tx,
+      );
+
+      return {
+        request: returnRequest,
+        list: {
+          issueRequest: issueRequest ? [issueRequest] : [],
+        },
+      };
+    });
+  }
+
   async createReturnRequest(
     data: TReturnRequestCreateSchema,
     user: TJWTPayload,
@@ -1156,7 +1183,7 @@ export class InventoryService {
 
         if (
           issuedItem.quantity - quantityDamaged - totalReturns <
-          item.quantityReturned + item.quantityDamaged
+          item.quantityReceived + item.quantityDamaged
         ) {
           quantityExceededReturnRequests.push(issuedItem);
         }
@@ -1168,7 +1195,43 @@ export class InventoryService {
         );
       }
 
+      const returnStatusList = nonConsumableItems.map((it) => {
+        const totalReturns = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityReceived ?? 0);
+        }, it.quantityReceived);
+
+        const totalDamaged = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityDamaged ?? 0);
+        }, it.quantityDamaged);
+
+        const issuedItem = issueRequest.items.find(
+          (i) => i.id === it.issueItemId,
+        );
+
+        const issuedQty = issuedItem.quantity;
+        const status = this.circulationService.generateIssueReturnStatus(
+          totalReturns,
+          totalDamaged,
+          issuedQty,
+        );
+
+        return {
+          id: it.issueItemId,
+          status: status,
+        };
+      });
+
       await this.circulationService.createReturnRequest(data, user, tx);
+      await this.circulationService.updateIssueRequestItemStatus(
+        returnStatusList,
+        tx,
+      );
 
       await this.stockService.createStockMovement(
         nonConsumableItems.map((item) => {
@@ -1177,7 +1240,7 @@ export class InventoryService {
           ).product;
           return {
             productId: prod.id,
-            quantity: item.quantityReturned,
+            quantity: item.quantityReceived,
             movementType: 'return',
             reference: `Return request ${data.issueRequestId}`,
           };
@@ -1196,8 +1259,8 @@ export class InventoryService {
             productId: prod.id,
             payload: {
               quantityAvailable:
-                stock.quantityAvailable + item.quantityReturned,
-              quantityIssued: stock.quantityIssued - item.quantityReturned,
+                stock.quantityAvailable + item.quantityReceived,
+              quantityIssued: stock.quantityIssued - item.quantityReceived,
               quantityDamaged: stock.quantityDamaged + item.quantityDamaged,
             },
           };
@@ -1313,7 +1376,7 @@ export class InventoryService {
             totalReturns +
             existingReturnRequestItem.quantityReceived -
             existingReturnRequestItem.quantityDamaged <
-          item.quantityReturned + item.quantityDamaged
+          item.quantityReceived + item.quantityDamaged
         ) {
           quantityExceededReturnRequests.push(issuedItem);
         }
@@ -1325,7 +1388,58 @@ export class InventoryService {
         );
       }
 
+      const returnStatusList = nonConsumableItems.map((it) => {
+        const existingReturnRequestItem = existingReturnRequest.items.find(
+          (i) => i.issueItemId === it.issueItemId,
+        );
+        const totalReturns = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityReceived ?? 0);
+        }, 0);
+
+        const totalDamaged = returnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityDamaged ?? 0);
+        }, 0);
+
+        const issuedItem = issueRequest.items.find(
+          (i) => i.id === it.issueItemId,
+        );
+
+        const issuedQty = issuedItem.quantity;
+
+        const finalDamage =
+          totalDamaged -
+          existingReturnRequestItem.quantityDamaged +
+          (it.quantityDamaged ?? 0);
+
+        const finalReturn =
+          totalReturns -
+          existingReturnRequestItem.quantityReceived +
+          (it.quantityReceived ?? 0);
+
+        const status = this.circulationService.generateIssueReturnStatus(
+          finalReturn,
+          finalDamage,
+          issuedQty,
+        );
+
+        return {
+          id: it.issueItemId,
+          status: status,
+        };
+      });
+
       await this.circulationService.updateReturnRequest(id, data, tx);
+
+      await this.circulationService.updateIssueRequestItemStatus(
+        returnStatusList,
+        tx,
+      );
 
       // revert previous movements of this return request and create new ones
       await this.stockService.createStockMovement(
@@ -1365,7 +1479,7 @@ export class InventoryService {
           );
           return {
             productId: existingIssueRequestItem.product.id,
-            quantity: item.quantityReturned,
+            quantity: item.quantityReceived,
             movementType: 'return',
             reference: `Return request ${data.issueRequestId}`,
           };
@@ -1376,22 +1490,24 @@ export class InventoryService {
       await this.stockService.updateStockMetadata(
         nonConsumableItems.map((item) => {
           const existingReturnRequestItem = existingReturnRequest.items.find(
-            (i) => i.id === item.issueItemId,
+            (i) => i.issueItemId === item.issueItemId,
           );
+
           const stock = stockList.find(
             (s) => s.product.id === existingReturnRequestItem.product.id,
           )!;
+
           return {
             productId: existingReturnRequestItem.product.id,
             payload: {
               quantityAvailable:
                 stock.quantityAvailable -
                 existingReturnRequestItem.quantityReceived +
-                item.quantityReturned,
+                item.quantityReceived,
               quantityIssued:
                 stock.quantityIssued +
                 existingReturnRequestItem.quantityReceived -
-                item.quantityReturned,
+                item.quantityReceived,
               quantityDamaged:
                 stock.quantityDamaged -
                 existingReturnRequestItem.quantityDamaged +
@@ -1428,12 +1544,63 @@ export class InventoryService {
         throw new NotFoundException(`Return request with id ${id} not found`);
       }
 
-      const stockList = await this.stockService.getStockDetailsList(
-        returnRequest.items.map((i) => i.product.id),
+      const issueRequest = await this.circulationService.getIssueRequest(
+        returnRequest.issueRequestId,
         tx,
       );
 
+      const [stockList, existingReturnRequests] = await Promise.all([
+        this.stockService.getStockDetailsList(
+          returnRequest.items.map((i) => i.product.id),
+          tx,
+        ),
+        this.circulationService.getReturnRequestByIssueCode(
+          issueRequest.issueCode,
+          tx,
+        ),
+      ]);
+
+      const returnStatusList = returnRequest.items.map((it) => {
+        const totalReturns = existingReturnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityReceived ?? 0);
+        }, 0);
+
+        const totalDamaged = existingReturnRequests.reduce((acc, rr) => {
+          const oldReturnRequestItem = rr.items.find(
+            (i) => i.issueItemId === it.issueItemId,
+          );
+          return acc + (oldReturnRequestItem?.quantityDamaged ?? 0);
+        }, 0);
+
+        const issuedItem = issueRequest.items.find(
+          (i) => i.id === it.issueItemId,
+        );
+
+        const issuedQty = issuedItem.quantity;
+
+        const finalDamage = totalDamaged - it.quantityDamaged;
+        const finalReturn = totalReturns - it.quantityReceived;
+
+        const status = this.circulationService.generateIssueReturnStatus(
+          finalReturn,
+          finalDamage,
+          issuedQty,
+        );
+
+        return {
+          id: it.issueItemId,
+          status: status,
+        };
+      });
+
       await this.circulationService.deleteReturnRequest(id, tx);
+      await this.circulationService.updateIssueRequestItemStatus(
+        returnStatusList,
+        tx,
+      );
 
       await this.stockService.createStockMovement(
         returnRequest.items.map((item) => {
