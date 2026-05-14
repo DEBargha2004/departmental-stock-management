@@ -116,7 +116,7 @@ export class UserService {
             ? [
                 or(
                   gte(sql`SIMILARITY(${user.name},${query})`, 0.3),
-                  gte(sql`SIMILARITY(${user.name},${query})`, 0.3),
+                  gte(sql`SIMILARITY(${user.email},${query})`, 0.3),
                 ),
               ]
             : []),
