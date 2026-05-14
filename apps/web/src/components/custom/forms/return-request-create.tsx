@@ -47,7 +47,6 @@ import { Separator } from "@/components/ui/separator";
 
 import { formatDateForInput } from "@/lib/utils";
 import { useGetAllIssueRequestsQuery } from "@/controllers/issue-request/query";
-import { ISSUE_REQUEST_RETURN_STATUS } from "@repo/contracts/status";
 
 export default function CreateReturnRequestForm({
   form,
@@ -102,6 +101,10 @@ export default function CreateReturnRequestForm({
   );
   const availableItems = selectedIssueRequest?.items ?? [];
 
+  const getSelectedIssueRequest = (id: number) => {
+    return issueRequestsList.find((ir) => ir.id === id);
+  };
+
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -136,7 +139,7 @@ export default function CreateReturnRequestForm({
                         {field.value && field.value !== -1 ? (
                           <div className="flex items-center gap-2.5 text-left min-w-0">
                             <span className="text-sm font-bold truncate">
-                              #{field.value}
+                              {getSelectedIssueRequest(field.value)?.issueCode}
                             </span>
                           </div>
                         ) : (
@@ -161,7 +164,7 @@ export default function CreateReturnRequestForm({
                           >
                             <div className="flex items-center justify-between w-full gap-3">
                               <span className="font-bold text-sm">
-                                #{ir.id}
+                                {ir.issueCode}
                               </span>
                               <span className="text-[9px] text-muted-foreground uppercase font-bold">
                                 {formatDateForInput(ir.issueDate.toString())}

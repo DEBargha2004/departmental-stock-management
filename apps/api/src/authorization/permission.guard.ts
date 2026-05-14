@@ -4,7 +4,7 @@ import {
   Injectable,
   SetMetadata,
 } from '@nestjs/common';
-import { Permission } from './permissions.constants';
+import { Permission } from '@repo/contracts/permission';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { TJWTPayload } from 'src/authentication/auth.service';

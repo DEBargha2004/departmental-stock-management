@@ -1,4 +1,4 @@
-import type { TPurchaseOrder } from "@/controllers/purchase-order/api";
+import type { TPurchaseOrder } from "@repo/contracts/purchase-order";
 import { Package2, Hash, IndianRupee, Calculator } from "lucide-react";
 import {
   Table,

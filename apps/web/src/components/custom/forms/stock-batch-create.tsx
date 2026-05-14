@@ -37,7 +37,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatDateForInput } from "@/lib/utils";
-import type { TPurchaseOrder } from "@/controllers/purchase-order/api";
+import type { TPurchaseOrder } from "@repo/contracts/purchase-order";
 
 export default function StockBatchCreateForm({
   form,

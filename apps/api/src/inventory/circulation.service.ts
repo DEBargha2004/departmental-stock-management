@@ -553,6 +553,7 @@ export class CirculationService {
     trx?: Transaction,
   ) {
     const db = trx ?? this.db;
+    if (!list.length) return;
 
     await db.transaction(async (tx) => {
       const values = list.map(

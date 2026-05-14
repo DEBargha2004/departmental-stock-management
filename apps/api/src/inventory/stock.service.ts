@@ -115,6 +115,7 @@ export class StockService {
 
   async updateStockMetadata(props: TStockUpdate[], trx?: Transaction) {
     const db = trx ?? this.db;
+    if (!props.length) return;
 
     const values = props.map(
       (i) => sql`(
@@ -125,8 +126,6 @@ export class StockService {
       ${i.payload.quantityIssued ?? null}::integer
     )`,
     );
-
-    if (!values.length) return;
 
     await db.execute(sql`
     UPDATE ${stock}
@@ -149,6 +148,7 @@ export class StockService {
 
   async createStockMovement(payload: TDBStockMovement[], trx?: Transaction) {
     const db = trx ?? this.db;
+    if (!payload.length) return;
 
     await db.insert(stockMovement).values(payload);
   }

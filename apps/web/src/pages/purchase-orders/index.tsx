@@ -16,15 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  FileText,
-  Plus,
-  FileBox,
-} from "lucide-react";
+import { Search, Edit, Trash2, Eye, Plus, FileBox } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { catchError } from "@/lib/catch-error";

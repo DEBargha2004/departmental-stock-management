@@ -37,12 +37,12 @@ import SearchableSelect, {
   SearchableSelectTrigger,
   SearchableSelectVacuum,
 } from "../searchable-select";
-import type { TProduct } from "@/controllers/product/api";
+import type { TProduct } from "@repo/contracts/item";
 import { getDefaultPurchaseOrderItemValues } from "@/constants/form-defaults/purchase-order";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import type { TVendor } from "@/controllers/vendor/api";
+import type { TVendor } from "@repo/contracts/vendor";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatDateForInput } from "@/lib/utils";
 

@@ -1,4 +1,4 @@
-import type { TStockBatch } from "@/controllers/stock-batch/api";
+import type { TStockBatch } from "@repo/contracts/stock-batch";
 import {
   Package2,
   Hash,

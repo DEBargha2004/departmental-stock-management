@@ -1,4 +1,4 @@
-import type { TIssueRequestCreateSchema } from "@repo/contracts/issue-request";
+import type { TIssueRequestCreateSchema } from "@repo/contracts/circulation";
 
 export const getDefaultIssueRequestCreateValues =
   (): TIssueRequestCreateSchema => ({

@@ -9,7 +9,7 @@ import {
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
-import { Permission } from 'src/authorization/permissions.constants';
+import { Permission } from '@repo/contracts/permission';
 import {
   PermissionGuard,
   Permissions,

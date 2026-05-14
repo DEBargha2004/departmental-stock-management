@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Ban,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -45,6 +46,12 @@ function IssueItemStatusIndicator({
       icon: AlertCircle,
       className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
       iconClassName: "text-blue-500",
+    },
+    [ISSUE_REQUEST_RETURN_STATUS.NON_RETURNABLE]: {
+      label: getIssueRequestReturnStatusObject("non_returnable").label,
+      icon: Ban,
+      className: "bg-zinc-500/10 text-zinc-600 border-zinc-500/20",
+      iconClassName: "text-zinc-500",
     },
   };
 
@@ -171,9 +178,16 @@ export default function IssueRequestItemList({
               >
                 <TableCell className="px-4 py-4">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                      {item.product.name}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        {item.product.name}
+                      </span>
+                      {item.isConsumable && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-100 text-zinc-500 border border-zinc-200 uppercase tracking-tighter">
+                          Consumable
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono opacity-60">
                       ID: {item.product.id}
                     </span>

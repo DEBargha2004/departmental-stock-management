@@ -11,7 +11,7 @@ export default function AppNavbar() {
     <nav
       className={cn(
         "h-16 w-full sticky top-0 border-b px-4",
-        "flex items-center justify-start gap-3 bg-background",
+        "flex items-center justify-start gap-3 bg-background z-999",
       )}
     >
       <Button

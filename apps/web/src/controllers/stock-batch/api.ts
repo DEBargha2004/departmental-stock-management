@@ -6,14 +6,11 @@ import type {
   TStockBatchCreateSchema,
   TStockBatchUpdateSchema,
   TStockBatch,
-  TStockBatchItem,
 } from "@repo/contracts/stock-batch";
 import { api } from "@/lib/axios";
 import type { TPurchaseOrder } from "@repo/contracts/purchase-order";
 import type { TProduct } from "@repo/contracts/item";
 import type { TVendor } from "@repo/contracts/vendor";
-
-
 
 export async function createStockBatchRequest(
   data: TStockBatchCreateSchema,
@@ -39,11 +36,7 @@ export async function deleteStockBatchRequest({
   return api.delete(`/inventory/stock-batch/${id}`);
 }
 
-export async function getStockBatchRequest({
-  id,
-}: {
-  id: number;
-}): Promise<
+export async function getStockBatchRequest({ id }: { id: number }): Promise<
   AxiosResponse<
     TSuccess<{
       batch: TStockBatch;

@@ -1227,6 +1227,12 @@ export class InventoryService {
         };
       });
 
+      if (!nonConsumableItems.length) {
+        throw new BadRequestException(
+          'No non-consumable items found in the return request',
+        );
+      }
+
       await this.circulationService.createReturnRequest(data, user, tx);
       await this.circulationService.updateIssueRequestItemStatus(
         returnStatusList,
@@ -1433,6 +1439,12 @@ export class InventoryService {
           status: status,
         };
       });
+
+      if (!nonConsumableItems.length) {
+        throw new BadRequestException(
+          'No non-consumable items found in the return request',
+        );
+      }
 
       await this.circulationService.updateReturnRequest(id, data, tx);
 

@@ -235,6 +235,10 @@ export const ISSUE_REQUEST_RETURN_STATUS_FORMATTED = [
     id: "partially_returned",
     label: "Partially Returned",
   },
+  {
+    id: "non_returnable",
+    label: "Non-returnable",
+  },
 ] as const satisfies { id: ISSUE_REQUEST_RETURN_STATUS; label: string }[];
 
 export const getStatusObject = (status: STATUS) => {

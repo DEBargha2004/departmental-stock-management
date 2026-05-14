@@ -1,4 +1,4 @@
-import { getSidebarItems, sidebarItems } from "@/constants/sidebar";
+import { getSidebarItems } from "@/constants/sidebar";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,6 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import { useGetAccessListQuery } from "@/controllers/main/query";
-import { Skeleton } from "../ui/skeleton";
 
 export default function AppSidebar() {
   const { logout } = useAuth();
