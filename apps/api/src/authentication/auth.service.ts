@@ -143,7 +143,7 @@ export class AuthService {
 
     const token = crypto.randomBytes(32).toString('hex');
     const hash = this.hashToken(token);
-    const expiry = 10 * 60;
+    const expiry = 10 * 60 * 1000;
 
     await this.db.transaction(async (trx) => {
       await trx
@@ -190,7 +190,7 @@ export class AuthService {
       .set({
         password: passwordHash,
       })
-      .where(eq(credentials.userId, resetPasswordToken.userId));
+      .where(eq(credentials.userId, resetPasswordEntry.userId));
 
     await this.db
       .delete(resetPasswordToken)

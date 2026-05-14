@@ -12,6 +12,7 @@ export type TConfig = {
   minio_region: string;
   minio_endpoint: string;
   minio_bucket: string;
+  resend_api_key: string;
 };
 
 export default (): TConfig => ({
@@ -28,4 +29,5 @@ export default (): TConfig => ({
   minio_region: process.env.MINIO_REGION!,
   minio_endpoint: process.env.MINIO_ENDPOINT!,
   minio_bucket: process.env.MINIO_BUCKET!,
+  resend_api_key: process.env.RESEND_API_KEY!,
 });
