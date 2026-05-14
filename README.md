@@ -109,8 +109,8 @@ Run migrations and seed the database:
 
 ```bash
 # In apps/api
-pnpm run db:push
-pnpm run seed # If a seed script is available
+pnpm run migration:generate
+# on api startup, app will automatically perform migration
 ```
 
 ---
